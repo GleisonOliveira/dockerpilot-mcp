@@ -1,6 +1,6 @@
 # DockerPilot MCP
 
-TypeScript MCP server that exposes Docker commands as tools for AI agents.
+TypeScript MCP server that exposes Docker commands as tools and prompts for AI agents.
 
 Allows agents (Claude, Copilot, etc.) to interact with Docker containers via the MCP protocol — no direct shell access needed.
 
@@ -71,21 +71,26 @@ Add to `claude_desktop_config.json`:
 ```
 src/
   index.ts                        # entrypoint: connects server to stdio transport
-  server.ts                       # registers all tools on McpServer
+  server.ts                       # registers all tools and prompts on McpServer
   tools.config.ts                 # array with all ToolConstructor registered
+  prompts.config.ts               # array with all PromptConstructor registered
   di/
     tool-container.ts             # DI: instantiates tools from ToolConstructor[]
+    prompt-container.ts           # DI: instantiates prompts from PromptConstructor[]
   utils/
     try-catch.ts                  # tryCatch<T> wrapper for async errors
   docker/
     client.ts                     # Dockerode singleton (socket /var/run/docker.sock)
     shared/
       base.tool.ts                # abstract BaseTool with register() method
+      base.prompt.ts              # abstract BasePrompt with register() method
       list.resolvers.ts           # ContainerFieldResolvers (optional container fields)
     tools/
       list/list.tool.ts           # tool list_containers
       stop/stop.tool.ts           # tool stop_containers
       start/start.tool.ts         # tool start_containers
+    prompts/
+      container-troubleshoot.prompt.ts  # prompt container_troubleshoot
 ```
 
 ## Available Tools
@@ -95,6 +100,12 @@ src/
 | `list_containers` | Lists Docker containers. `all=true` includes stopped ones. |
 | `stop_containers` | Stops running containers by name or ID. Supports exclude, timeout, force, stopDependents, and dryRun. |
 | `start_containers` | Starts stopped containers by name or ID. Supports exclude, startDependencies, and dryRun. |
+
+## Available Prompts
+
+| Prompt | Description | When to activate |
+|--------|-------------|------------------|
+| `container_troubleshoot` | Diagnostic guide for Docker container problems | User reports container not working, not starting, port conflict, crash loop, etc. |
 
 ## Adding a New Tool
 
@@ -110,6 +121,18 @@ Required pattern:
 - Use `tryCatch` from `utils/try-catch.ts` as error wrapper — never manual try/catch in `#handle`
 - Error return: `{ content: [{ type: "text", text: "Error ...: <message>" }], isError: true }`
 - Success return: `{ content: [{ type: "text", text: JSON.stringify(result, null, 2) }] }`
+
+## Adding a New Prompt
+
+1. Create `src/docker/prompts/<name>.prompt.ts` exporting a class `extends BasePrompt`
+2. Define Zod schema for the prompt arguments
+3. Implement `register(server)` calling `server.registerPrompt(...)`
+4. Add the class to `src/prompts.config.ts` in the `promptClasses` array
+
+Required pattern:
+- Prompts must be written in English
+- Zod schema defined locally in the prompt file (not exported)
+- Prompts do not receive `DockerClient` — they are guidance messages for the agent only
 
 ## Conventions
 
