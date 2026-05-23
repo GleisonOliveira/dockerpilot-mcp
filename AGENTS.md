@@ -25,6 +25,7 @@ src/
     tools/
       list/list.tool.ts           # tool list_containers
       stop/stop.tool.ts           # tool stop_containers
+      start/start.tool.ts         # tool start_containers
 ```
 
 ## Como Adicionar Nova Tool

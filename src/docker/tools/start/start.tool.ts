@@ -6,27 +6,25 @@ import { BaseTool } from "../../shared/base.tool.js";
 import { tryCatch } from "../../../utils/try-catch.js";
 
 const schema = z.object({
-  names: z.array(z.string()).optional().describe("Container names to stop (partial match, case-insensitive). Omit to stop all running containers."),
-  ids: z.array(z.string()).optional().describe("Container IDs to stop (prefix match). Omit to stop all running containers."),
-  exclude: z.array(z.string()).optional().describe("Container names or IDs to exclude from stopping."),
-  timeout: z.number().int().min(0).optional().default(10).describe("Seconds to wait before killing the container (default: 10)."),
-  force: z.boolean().optional().default(false).describe("Force stop by sending SIGKILL immediately."),
-  stopDependents: z.boolean().optional().default(false).describe("Also stop containers that depend on the targets (via Docker Compose depends_on labels), resolved recursively. Only applies within the same Compose project."),
+  names: z.array(z.string()).optional().describe("Container names to start (partial match, case-insensitive). Omit to start all stopped containers."),
+  ids: z.array(z.string()).optional().describe("Container IDs to start (prefix match). Omit to start all stopped containers."),
+  exclude: z.array(z.string()).optional().describe("Container names or IDs to exclude from starting."),
+  startDependencies: z.boolean().optional().default(false).describe("Also start containers that the targets depend on (via Docker Compose depends_on labels), resolved recursively. Only applies within the same Compose project."),
   summarized: z.boolean().optional().default(true).describe("When true (default), returns only { success: true } on a successful real run. Set to false to get the full per-container result list."),
-  dryRun: z.boolean().optional().default(false).describe("Preview which containers would be stopped without actually stopping them. Default is false — set to true to preview."),
+  dryRun: z.boolean().optional().default(false).describe("Preview which containers would be started without actually starting them. Default is false — set to true to preview."),
 });
 
 type Input = z.infer<typeof schema>;
 
-type StopResult = {
+type StartResult = {
   id: string;
   name: string;
-  dependent: boolean;
-  stopped: boolean;
+  dependency: boolean;
+  started: boolean;
   error?: string;
 };
 
-export class StopContainersTool extends BaseTool {
+export class StartContainersTool extends BaseTool {
   constructor(private readonly client: DockerClient) {
     super();
   }
@@ -72,7 +70,7 @@ export class StopContainersTool extends BaseTool {
     });
   }
 
-  #resolveDependents(
+  #resolveDependencies(
     all: Dockerode.ContainerInfo[],
     primaryTargets: Dockerode.ContainerInfo[],
     targetIds: Set<string>,
@@ -84,26 +82,29 @@ export class StopContainersTool extends BaseTool {
     let frontier = primaryTargets;
 
     while (frontier.length > 0) {
-      const newDependents = all.filter((c) => {
+      const newDeps = all.filter((c) => {
         if (resolvedIds.has(c.Id)) return false;
         if (this.#isExcluded(excluded, c.Id, c.Names)) return false;
 
-        const raw = c.Labels?.["com.docker.compose.depends_on"] ?? "";
-        if (!raw) return false;
-
-        const deps = raw.split(",").map((s) => s.trim().split(":")[0].toLowerCase());
+        const cService = this.#getService(c);
         const cProject = this.#getProject(c);
+        if (!cService || !cProject) return false;
 
-        return frontier.some(
-          (t) => this.#getProject(t) === cProject && deps.includes(this.#getService(t))
-        );
+        return frontier.some((t) => {
+          if (this.#getProject(t) !== cProject) return false;
+          const raw = t.Labels?.["com.docker.compose.depends_on"] ?? "";
+          if (!raw) return false;
+          const deps = raw.split(",").map((s) => s.trim().split(":")[0].toLowerCase());
+          return deps.includes(cService);
+        });
       });
 
-      for (const d of newDependents) resolvedIds.add(d.Id);
-      result.push(...newDependents);
-      frontier = newDependents;
+      for (const d of newDeps) resolvedIds.add(d.Id);
+      result.push(...newDeps);
+      frontier = newDeps;
     }
 
+    // deepest dependencies first (leaves before roots), then primaries start last
     return result.reverse();
   }
 
@@ -113,57 +114,46 @@ export class StopContainersTool extends BaseTool {
 
       const docker = this.client.getDocker();
 
-      const allRunning = await docker.listContainers({ all: false });
+      const allStopped = await docker.listContainers({ all: true, filters: JSON.stringify({ status: ["exited", "created", "paused"] }) });
 
       const excluded = new Set((input.exclude ?? []).map((e) => e.toLowerCase()));
 
-      const primaryTargets = this.#resolvePrimaryTargets(allRunning, excluded, input.names, input.ids);
+      const primaryTargets = this.#resolvePrimaryTargets(allStopped, excluded, input.names, input.ids);
 
       const targetIds = new Set(primaryTargets.map((c) => c.Id));
 
-      const dependents = (input.stopDependents ?? false)
-        ? this.#resolveDependents(allRunning, primaryTargets, targetIds, excluded)
+      const dependencies = (input.startDependencies ?? false)
+        ? this.#resolveDependencies(allStopped, primaryTargets, targetIds, excluded)
         : [];
 
-      const targets = input.stopDependents
-        ? [...dependents.filter((d) => !targetIds.has(d.Id)), ...primaryTargets]
+      const dependencyIds = new Set(dependencies.map((d) => d.Id));
+
+      const targets = input.startDependencies
+        ? [...dependencies.filter((d) => !targetIds.has(d.Id)), ...primaryTargets]
         : [...primaryTargets];
 
-      const dependentIds = new Set(dependents.map((d) => d.Id));
-
-      if (input.dryRun ?? true) {
+      if (input.dryRun ?? false) {
         return {
           dryRun: true,
-          force: input.force ?? false,
-          timeout: input.force ? null : (input.timeout ?? 10),
-          stopDependents: input.stopDependents ?? false,
-          wouldStop: targets.map((c) => ({
+          startDependencies: input.startDependencies ?? false,
+          wouldStart: targets.map((c) => ({
             id: c.Id.slice(0, 12),
             name: c.Names[0]?.replace(/^\//, "") ?? c.Id.slice(0, 12),
-            dependent: dependentIds.has(c.Id),
+            dependency: dependencyIds.has(c.Id),
           })),
         };
       }
 
-      const results: StopResult[] = await Promise.all(
+      const results: StartResult[] = await Promise.all(
         targets.map(async (c) => {
           const name = c.Names[0]?.replace(/^\//, "") ?? c.Id.slice(0, 12);
           const id = c.Id.slice(0, 12);
-          const dependent = dependentIds.has(c.Id);
+          const dependency = dependencyIds.has(c.Id);
 
-          if (input.force) {
-            const r = await tryCatch(() => docker.getContainer(c.Id).kill());
-            return r.success
-              ? { id, name, dependent, stopped: true }
-              : { id, name, dependent, stopped: false, error: r.error };
-          }
-
-          const r = await tryCatch(() =>
-            docker.getContainer(c.Id).stop({ t: input.timeout ?? 10 })
-          );
+          const r = await tryCatch(() => docker.getContainer(c.Id).start());
           return r.success
-            ? { id, name, dependent, stopped: true }
-            : { id, name, dependent, stopped: false, error: r.error };
+            ? { id, name, dependency, started: true }
+            : { id, name, dependency, started: false, error: r.error };
         })
       );
 
@@ -173,7 +163,7 @@ export class StopContainersTool extends BaseTool {
 
     if (!outcome.success) {
       return {
-        content: [{ type: "text" as const, text: `Error stopping containers: ${outcome.error}` }],
+        content: [{ type: "text" as const, text: `Error starting containers: ${outcome.error}` }],
         isError: true,
       };
     }
@@ -185,16 +175,14 @@ export class StopContainersTool extends BaseTool {
 
   register(server: McpServer): void {
     server.registerTool(
-      "stop_containers",
+      "start_containers",
       {
         description:
-          "Stop running Docker containers. " +
-          "Pass names (partial match) or ids (prefix match) to target specific containers; omit both to stop all running containers. Containers are matched regardless of their Compose project. " +
+          "Start stopped Docker containers. " +
+          "Pass names (partial match) or ids (prefix match) to target specific containers; omit both to start all stopped containers. Containers are matched regardless of their Compose project. " +
           "Use exclude to protect containers by name or ID. " +
-          "Use timeout to set the grace period before SIGKILL (default 10s). " +
-          "Use force to send SIGKILL immediately. " +
-          "Use stopDependents=true to also stop containers that declare a Compose depends_on on any target, resolved recursively (same Compose project only). " +
-          "Use dryRun=true to preview what would be stopped without taking action.",
+          "Use startDependencies=true to also start containers that the targets depend on, resolved recursively (same Compose project only). " +
+          "Use dryRun=true to preview what would be started without taking action.",
         inputSchema: schema.shape,
       },
       this.#handle.bind(this)
