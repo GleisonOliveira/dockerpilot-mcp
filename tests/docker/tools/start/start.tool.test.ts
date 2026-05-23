@@ -1,10 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { StopContainersTool } from "../../../../src/docker/tools/stop/stop.tool.js";
+import { StartContainersTool } from "../../../../src/docker/tools/start/start.tool.js";
 import { DockerClient } from "../../../../src/docker/client.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-const mockStop = vi.fn();
-const mockKill = vi.fn();
+const mockStart = vi.fn();
 const mockListContainers = vi.fn();
 const mockCheckConnection = vi.fn().mockResolvedValue(undefined);
 
@@ -12,20 +11,20 @@ const mockClient = {
   checkConnection: mockCheckConnection,
   getDocker: () => ({
     listContainers: mockListContainers,
-    getContainer: (_id: string) => ({ stop: mockStop, kill: mockKill }),
+    getContainer: (_id: string) => ({ start: mockStart }),
   }),
 } as unknown as DockerClient;
 
 function buildTool() {
-  return new StopContainersTool(mockClient);
+  return new StartContainersTool(mockClient);
 }
 
 const makeContainer = (id: string, name: string, labels: Record<string, string> = {}) => ({
   Id: id,
   Names: [`/${name}`],
   Image: "nginx:latest",
-  Status: "Up 2 hours",
-  State: "running",
+  Status: "Exited (0) 2 hours ago",
+  State: "exited",
   Labels: labels,
 });
 
@@ -44,20 +43,17 @@ type CallbackInput = {
   names?: string[];
   ids?: string[];
   exclude?: string[];
-  timeout?: number;
-  force?: boolean;
-  stopDependents?: boolean;
+  startDependencies?: boolean;
   summarized?: boolean;
   dryRun?: boolean;
 };
 
-describe("StopContainersTool", () => {
+describe("StartContainersTool", () => {
   let capturedCallback: (input: CallbackInput) => Promise<unknown>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStop.mockResolvedValue(undefined);
-    mockKill.mockResolvedValue(undefined);
+    mockStart.mockResolvedValue(undefined);
 
     const tool = buildTool();
     const fakeServer = {
@@ -70,18 +66,15 @@ describe("StopContainersTool", () => {
   });
 
   describe("dryRun=true", () => {
-    it("returns wouldStop list without calling stop", async () => {
+    it("returns wouldStart list without calling start", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
 
       const result = await capturedCallback({ dryRun: true }) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.dryRun).toBe(true);
-      expect(parsed.wouldStop).toHaveLength(2);
-      expect(parsed.wouldStop[0]).toEqual({ id: "aaa111bbb222", name: "web", dependent: false });
-      expect(parsed.wouldStop[1]).toEqual({ id: "ddd444eee555", name: "db", dependent: false });
-      expect(mockStop).not.toHaveBeenCalled();
-      expect(mockKill).not.toHaveBeenCalled();
+      expect(parsed.wouldStart).toHaveLength(2);
+      expect(mockStart).not.toHaveBeenCalled();
     });
 
     it("dryRun respects name filter", async () => {
@@ -90,38 +83,8 @@ describe("StopContainersTool", () => {
       const result = await capturedCallback({ dryRun: true, names: ["web"] }) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
-      expect(parsed.wouldStop).toHaveLength(1);
-      expect(parsed.wouldStop[0].name).toBe("web");
-    });
-
-    it("includes force=false and timeout=10 by default", async () => {
-      mockListContainers.mockResolvedValue([containerA]);
-
-      const result = await capturedCallback({ dryRun: true }) as { content: { text: string }[] };
-      const parsed = JSON.parse(result.content[0].text);
-
-      expect(parsed.force).toBe(false);
-      expect(parsed.timeout).toBe(10);
-    });
-
-    it("includes force=true and timeout=null when force specified", async () => {
-      mockListContainers.mockResolvedValue([containerA]);
-
-      const result = await capturedCallback({ dryRun: true, force: true }) as { content: { text: string }[] };
-      const parsed = JSON.parse(result.content[0].text);
-
-      expect(parsed.force).toBe(true);
-      expect(parsed.timeout).toBeNull();
-    });
-
-    it("includes custom timeout when specified", async () => {
-      mockListContainers.mockResolvedValue([containerA]);
-
-      const result = await capturedCallback({ dryRun: true, timeout: 30 }) as { content: { text: string }[] };
-      const parsed = JSON.parse(result.content[0].text);
-
-      expect(parsed.force).toBe(false);
-      expect(parsed.timeout).toBe(30);
+      expect(parsed.wouldStart).toHaveLength(1);
+      expect(parsed.wouldStart[0].name).toBe("web");
     });
 
     it("dryRun respects exclude", async () => {
@@ -130,25 +93,23 @@ describe("StopContainersTool", () => {
       const result = await capturedCallback({ dryRun: true, exclude: ["db"] }) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
-      expect(parsed.wouldStop).toHaveLength(1);
-      expect(parsed.wouldStop[0].name).toBe("web");
+      expect(parsed.wouldStart).toHaveLength(1);
+      expect(parsed.wouldStart[0].name).toBe("web");
     });
   });
 
-  describe("dryRun=false (default is true)", () => {
-    it("dryRun is true by default — does not call stop without explicit dryRun: false", async () => {
+  describe("dryRun=false (default)", () => {
+    it("dryRun is false by default — calls start without explicit dryRun: false", async () => {
       mockListContainers.mockResolvedValue([containerA]);
 
-      const result = await capturedCallback({}) as { content: { text: string }[] };
-      const parsed = JSON.parse(result.content[0].text);
+      await capturedCallback({});
 
-      expect(parsed.dryRun).toBe(true);
-      expect(mockStop).not.toHaveBeenCalled();
+      expect(mockStart).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe("stop all (no filter)", () => {
-    it("stops all running containers when no names or ids given", async () => {
+  describe("start all (no filter)", () => {
+    it("starts all stopped containers when no names or ids given", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
 
       const result = await capturedCallback({ dryRun: false, summarized: false }) as { content: { text: string }[] };
@@ -156,28 +117,12 @@ describe("StopContainersTool", () => {
 
       expect(parsed.dryRun).toBe(false);
       expect(parsed.results).toHaveLength(2);
-      expect(mockStop).toHaveBeenCalledTimes(2);
-    });
-
-    it("uses default timeout of 10 when not specified", async () => {
-      mockListContainers.mockResolvedValue([containerA]);
-
-      await capturedCallback({ dryRun: false, summarized: false });
-
-      expect(mockStop).toHaveBeenCalledWith({ t: 10 });
-    });
-
-    it("uses custom timeout when specified", async () => {
-      mockListContainers.mockResolvedValue([containerA]);
-
-      await capturedCallback({ dryRun: false, summarized: false, timeout: 30 });
-
-      expect(mockStop).toHaveBeenCalledWith({ t: 30 });
+      expect(mockStart).toHaveBeenCalledTimes(2);
     });
   });
 
   describe("filter by names", () => {
-    it("stops only containers matching name", async () => {
+    it("starts only containers matching name", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB, containerC]);
 
       const result = await capturedCallback({ dryRun: false, summarized: false, names: ["web"] }) as { content: { text: string }[] };
@@ -185,7 +130,7 @@ describe("StopContainersTool", () => {
 
       expect(parsed.results).toHaveLength(1);
       expect(parsed.results[0].name).toBe("web");
-      expect(mockStop).toHaveBeenCalledTimes(1);
+      expect(mockStart).toHaveBeenCalledTimes(1);
     });
 
     it("name filter is case-insensitive and partial match", async () => {
@@ -198,7 +143,7 @@ describe("StopContainersTool", () => {
       expect(parsed.results[0].name).toBe("web");
     });
 
-    it("stops multiple containers matching different names", async () => {
+    it("starts multiple containers matching different names", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB, containerC]);
 
       const result = await capturedCallback({ dryRun: false, summarized: false, names: ["web", "db"] }) as { content: { text: string }[] };
@@ -209,7 +154,7 @@ describe("StopContainersTool", () => {
   });
 
   describe("filter by ids", () => {
-    it("stops container matching id prefix", async () => {
+    it("starts container matching id prefix", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB, containerC]);
 
       const result = await capturedCallback({ dryRun: false, summarized: false, ids: ["aaa111"] }) as { content: { text: string }[] };
@@ -219,7 +164,7 @@ describe("StopContainersTool", () => {
       expect(parsed.results[0].name).toBe("web");
     });
 
-    it("stops multiple containers by id", async () => {
+    it("starts multiple containers by id", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB, containerC]);
 
       const result = await capturedCallback({ dryRun: false, summarized: false, ids: ["aaa111", "ddd444"] }) as { content: { text: string }[] };
@@ -277,65 +222,34 @@ describe("StopContainersTool", () => {
     });
   });
 
-  describe("force=true", () => {
-    it("calls kill instead of stop", async () => {
-      mockListContainers.mockResolvedValue([containerA]);
-
-      await capturedCallback({ dryRun: false, summarized: false, force: true });
-
-      expect(mockKill).toHaveBeenCalledTimes(1);
-      expect(mockStop).not.toHaveBeenCalled();
-    });
-
-    it("reports stopped=true on successful kill", async () => {
-      mockListContainers.mockResolvedValue([containerA]);
-
-      const result = await capturedCallback({ dryRun: false, summarized: false, force: true }) as { content: { text: string }[] };
-      const parsed = JSON.parse(result.content[0].text);
-
-      expect(parsed.results[0].stopped).toBe(true);
-    });
-  });
-
   describe("partial failures", () => {
-    it("reports stopped=false with error when stop fails for a container", async () => {
+    it("reports started=false with error when start fails for a container", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
-      mockStop
+      mockStart
         .mockResolvedValueOnce(undefined)
         .mockRejectedValueOnce(new Error("permission denied"));
 
       const result = await capturedCallback({ dryRun: false, summarized: false }) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
-      const stopped = parsed.results.find((r: { name: string }) => r.name === "web");
+      const started = parsed.results.find((r: { name: string }) => r.name === "web");
       const failed = parsed.results.find((r: { name: string }) => r.name === "db");
 
-      expect(stopped.stopped).toBe(true);
-      expect(failed.stopped).toBe(false);
+      expect(started.started).toBe(true);
+      expect(failed.started).toBe(false);
       expect(failed.error).toContain("permission denied");
-    });
-
-    it("reports stopped=false with error when kill fails", async () => {
-      mockListContainers.mockResolvedValue([containerA]);
-      mockKill.mockRejectedValueOnce(new Error("no such container"));
-
-      const result = await capturedCallback({ dryRun: false, summarized: false, force: true }) as { content: { text: string }[] };
-      const parsed = JSON.parse(result.content[0].text);
-
-      expect(parsed.results[0].stopped).toBe(false);
-      expect(parsed.results[0].error).toContain("no such container");
     });
   });
 
   describe("empty results", () => {
-    it("returns empty wouldStop when no running containers (dryRun default)", async () => {
+    it("returns empty results when no stopped containers", async () => {
       mockListContainers.mockResolvedValue([]);
 
-      const result = await capturedCallback({}) as { content: { text: string }[] };
+      const result = await capturedCallback({ dryRun: false, summarized: false }) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
-      expect(parsed.wouldStop).toHaveLength(0);
-      expect(mockStop).not.toHaveBeenCalled();
+      expect(parsed.results).toHaveLength(0);
+      expect(mockStart).not.toHaveBeenCalled();
     });
 
     it("returns empty results when filter matches nothing", async () => {
@@ -345,146 +259,159 @@ describe("StopContainersTool", () => {
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(0);
-      expect(mockStop).not.toHaveBeenCalled();
+      expect(mockStart).not.toHaveBeenCalled();
     });
   });
 
-  describe("stopDependents=true", () => {
-    it("also stops containers that depend on the target via Compose depends_on", async () => {
+  describe("startDependencies=true", () => {
+    it("also starts containers that the target depends on via Compose depends_on", async () => {
       const db = makeComposeContainer("db0000000000000000", "db", "myapp");
       const web = makeComposeContainer("web000000000000000", "web", "myapp", ["db"]);
 
       mockListContainers.mockResolvedValue([db, web]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["db"], stopDependents: true }) as { content: { text: string }[] };
+      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["web"], startDependencies: true }) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(2);
       const names = parsed.results.map((r: { name: string }) => r.name);
-      expect(names).toContain("db");
       expect(names).toContain("web");
+      expect(names).toContain("db");
     });
 
-    it("marks dependents with dependent=true and direct targets with dependent=false", async () => {
+    it("marks dependencies with dependency=true and direct targets with dependency=false", async () => {
       const db = makeComposeContainer("db0000000000000000", "db", "myapp");
       const web = makeComposeContainer("web000000000000000", "web", "myapp", ["db"]);
 
       mockListContainers.mockResolvedValue([db, web]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["db"], stopDependents: true }) as { content: { text: string }[] };
+      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["web"], startDependencies: true }) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
-      const dbResult = parsed.results.find((r: { name: string }) => r.name === "db");
       const webResult = parsed.results.find((r: { name: string }) => r.name === "web");
+      const dbResult = parsed.results.find((r: { name: string }) => r.name === "db");
 
-      expect(dbResult.dependent).toBe(false);
-      expect(webResult.dependent).toBe(true);
+      expect(webResult.dependency).toBe(false);
+      expect(dbResult.dependency).toBe(true);
     });
 
-    it("dryRun includes dependent flag per container", async () => {
+    it("dryRun includes dependency flag per container", async () => {
       const db = makeComposeContainer("db0000000000000000", "db", "myapp");
       const web = makeComposeContainer("web000000000000000", "web", "myapp", ["db"]);
 
       mockListContainers.mockResolvedValue([db, web]);
 
-      const result = await capturedCallback({ dryRun: true, names: ["db"], stopDependents: true }) as { content: { text: string }[] };
+      const result = await capturedCallback({ dryRun: true, names: ["web"], startDependencies: true }) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
-      expect(parsed.stopDependents).toBe(true);
-      expect(parsed.wouldStop).toHaveLength(2);
+      expect(parsed.startDependencies).toBe(true);
+      expect(parsed.wouldStart).toHaveLength(2);
 
-      const dbEntry = parsed.wouldStop.find((r: { name: string }) => r.name === "db");
-      const webEntry = parsed.wouldStop.find((r: { name: string }) => r.name === "web");
+      const webEntry = parsed.wouldStart.find((r: { name: string }) => r.name === "web");
+      const dbEntry = parsed.wouldStart.find((r: { name: string }) => r.name === "db");
 
-      expect(dbEntry.dependent).toBe(false);
-      expect(webEntry.dependent).toBe(true);
+      expect(webEntry.dependency).toBe(false);
+      expect(dbEntry.dependency).toBe(true);
     });
 
-    it("does not stop containers from a different Compose project", async () => {
+    it("does not start containers from a different Compose project", async () => {
       const db = makeComposeContainer("db0000000000000000", "db", "project-a");
       const web = makeComposeContainer("web000000000000000", "web", "project-b", ["db"]);
 
       mockListContainers.mockResolvedValue([db, web]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["db"], stopDependents: true }) as { content: { text: string }[] };
+      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["web"], startDependencies: true }) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(1);
-      expect(parsed.results[0].name).toBe("db");
+      expect(parsed.results[0].name).toBe("web");
     });
 
-    it("does not stop dependents when stopDependents is false", async () => {
+    it("does not start dependencies when startDependencies is false", async () => {
       const db = makeComposeContainer("db0000000000000000", "db", "myapp");
       const web = makeComposeContainer("web000000000000000", "web", "myapp", ["db"]);
 
       mockListContainers.mockResolvedValue([db, web]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["db"], stopDependents: false }) as { content: { text: string }[] };
+      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["web"], startDependencies: false }) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(1);
-      expect(parsed.results[0].name).toBe("db");
+      expect(parsed.results[0].name).toBe("web");
     });
 
-    it("does not include excluded containers even if they are dependents", async () => {
+    it("does not include excluded containers even if they are dependencies", async () => {
       const db = makeComposeContainer("db0000000000000000", "db", "myapp");
       const web = makeComposeContainer("web000000000000000", "web", "myapp", ["db"]);
 
       mockListContainers.mockResolvedValue([db, web]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["db"], stopDependents: true, exclude: ["web"] }) as { content: { text: string }[] };
+      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["web"], startDependencies: true, exclude: ["db"] }) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(1);
-      expect(parsed.results[0].name).toBe("db");
+      expect(parsed.results[0].name).toBe("web");
     });
 
-    it("resolves dependents recursively (A <- B <- C: stopping A also stops C and B)", async () => {
-      const a = makeComposeContainer("aaa000000000000000", "a", "myapp");
-      const b = makeComposeContainer("bbb000000000000000", "b", "myapp", ["a"]);
-      const c = makeComposeContainer("ccc000000000000000", "c", "myapp", ["b"]);
+    it("starts dependencies before targets (dependency first in results)", async () => {
+      const db = makeComposeContainer("db0000000000000000", "db", "myapp");
+      const web = makeComposeContainer("web000000000000000", "web", "myapp", ["db"]);
 
-      mockListContainers.mockResolvedValue([a, b, c]);
+      mockListContainers.mockResolvedValue([db, web]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["a"], stopDependents: true }) as { content: { text: string }[] };
+      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["web"], startDependencies: true }) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(parsed.results[0].name).toBe("db");
+      expect(parsed.results[1].name).toBe("web");
+    });
+
+    it("resolves dependencies recursively (web -> api -> db: starting web also starts api and db)", async () => {
+      const db = makeComposeContainer("db0000000000000000", "db", "myapp");
+      const api = makeComposeContainer("api0000000000000000", "api", "myapp", ["db"]);
+      const web = makeComposeContainer("web000000000000000", "web", "myapp", ["api"]);
+
+      mockListContainers.mockResolvedValue([db, api, web]);
+
+      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["web"], startDependencies: true }) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(3);
       const names = parsed.results.map((r: { name: string }) => r.name);
-      expect(names).toContain("a");
-      expect(names).toContain("b");
-      expect(names).toContain("c");
+      expect(names).toContain("web");
+      expect(names).toContain("api");
+      expect(names).toContain("db");
     });
 
-    it("stops leaf dependents before their parents (C before B before A)", async () => {
-      const a = makeComposeContainer("aaa000000000000000", "a", "myapp");
-      const b = makeComposeContainer("bbb000000000000000", "b", "myapp", ["a"]);
-      const c = makeComposeContainer("ccc000000000000000", "c", "myapp", ["b"]);
+    it("starts deepest dependency first (db before api before web)", async () => {
+      const db = makeComposeContainer("db0000000000000000", "db", "myapp");
+      const api = makeComposeContainer("api0000000000000000", "api", "myapp", ["db"]);
+      const web = makeComposeContainer("web000000000000000", "web", "myapp", ["api"]);
 
-      mockListContainers.mockResolvedValue([a, b, c]);
+      mockListContainers.mockResolvedValue([db, api, web]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["a"], stopDependents: true }) as { content: { text: string }[] };
+      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["web"], startDependencies: true }) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       const names = parsed.results.map((r: { name: string }) => r.name);
-      expect(names.indexOf("c")).toBeLessThan(names.indexOf("b"));
-      expect(names.indexOf("b")).toBeLessThan(names.indexOf("a"));
+      expect(names.indexOf("db")).toBeLessThan(names.indexOf("api"));
+      expect(names.indexOf("api")).toBeLessThan(names.indexOf("web"));
     });
 
-    it("dryRun shows recursive dependents with correct order", async () => {
-      const a = makeComposeContainer("aaa000000000000000", "a", "myapp");
-      const b = makeComposeContainer("bbb000000000000000", "b", "myapp", ["a"]);
-      const c = makeComposeContainer("ccc000000000000000", "c", "myapp", ["b"]);
+    it("dryRun shows recursive dependencies with correct order", async () => {
+      const db = makeComposeContainer("db0000000000000000", "db", "myapp");
+      const api = makeComposeContainer("api0000000000000000", "api", "myapp", ["db"]);
+      const web = makeComposeContainer("web000000000000000", "web", "myapp", ["api"]);
 
-      mockListContainers.mockResolvedValue([a, b, c]);
+      mockListContainers.mockResolvedValue([db, api, web]);
 
-      const result = await capturedCallback({ dryRun: true, names: ["a"], stopDependents: true }) as { content: { text: string }[] };
+      const result = await capturedCallback({ dryRun: true, names: ["web"], startDependencies: true }) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
-      expect(parsed.wouldStop).toHaveLength(3);
-      const names = parsed.wouldStop.map((r: { name: string }) => r.name);
-      expect(names.indexOf("c")).toBeLessThan(names.indexOf("b"));
-      expect(names.indexOf("b")).toBeLessThan(names.indexOf("a"));
+      expect(parsed.wouldStart).toHaveLength(3);
+      const names = parsed.wouldStart.map((r: { name: string }) => r.name);
+      expect(names.indexOf("db")).toBeLessThan(names.indexOf("api"));
+      expect(names.indexOf("api")).toBeLessThan(names.indexOf("web"));
     });
   });
 
@@ -517,14 +444,14 @@ describe("StopContainersTool", () => {
       expect(parsed.results).toHaveLength(2);
     });
 
-    it("dryRun ignores summarized — always returns wouldStop list", async () => {
+    it("dryRun ignores summarized — always returns wouldStart list", async () => {
       mockListContainers.mockResolvedValue([containerA]);
 
       const result = await capturedCallback({ dryRun: true, summarized: true }) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.dryRun).toBe(true);
-      expect(parsed.wouldStop).toBeDefined();
+      expect(parsed.wouldStart).toBeDefined();
     });
 
     it("does not suppress error responses when summarized=true", async () => {

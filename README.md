@@ -70,12 +70,22 @@ Add to `claude_desktop_config.json`:
 
 ```
 src/
-  index.ts              # entrypoint: connects server to stdio transport
-  server.ts             # registers all tools on McpServer
+  index.ts                        # entrypoint: connects server to stdio transport
+  server.ts                       # registers all tools on McpServer
+  tools.config.ts                 # array with all ToolConstructor registered
+  di/
+    tool-container.ts             # DI: instantiates tools from ToolConstructor[]
+  utils/
+    try-catch.ts                  # tryCatch<T> wrapper for async errors
   docker/
-    client.ts           # Dockerode singleton (socket /var/run/docker.sock)
+    client.ts                     # Dockerode singleton (socket /var/run/docker.sock)
+    shared/
+      base.tool.ts                # abstract BaseTool with register() method
+      list.resolvers.ts           # ContainerFieldResolvers (optional container fields)
     tools/
-      list.ts           # tool list_containers
+      list/list.tool.ts           # tool list_containers
+      stop/stop.tool.ts           # tool stop_containers
+      start/start.tool.ts         # tool start_containers
 ```
 
 ## Available Tools
@@ -83,23 +93,28 @@ src/
 | Tool | Description |
 |------|-------------|
 | `list_containers` | Lists Docker containers. `all=true` includes stopped ones. |
+| `stop_containers` | Stops running containers by name or ID. Supports exclude, timeout, force, stopDependents, and dryRun. |
+| `start_containers` | Starts stopped containers by name or ID. Supports exclude, startDependencies, and dryRun. |
 
 ## Adding a New Tool
 
-1. Create `src/docker/tools/<name>.ts`
-2. Export Zod schema (`<name>Schema`) and async function
-3. Register in `server.ts` with `server.registerTool(...)`
-4. Create test in `tests/<name>.test.ts` with mocked client
+1. Create `src/docker/tools/<name>/<name>.tool.ts` exporting a class `extends BaseTool`
+2. Define Zod schema locally in the tool file
+3. Implement `#handle(input)` using `tryCatch` to capture errors
+4. Implement `register(server)` calling `server.registerTool(..., this.#handle.bind(this))`
+5. Add the class to `src/tools.config.ts` in the `toolClasses` array
+6. Create test in `tests/docker/tools/<name>/<name>.tool.test.ts`
 
 Required pattern:
 - Zod validation
-- Docker errors propagated as exceptions (MCP SDK converts automatically)
-- Always return `{ content: [{ type: "text", text: JSON.stringify(...) }] }`
+- Use `tryCatch` from `utils/try-catch.ts` as error wrapper — never manual try/catch in `#handle`
+- Error return: `{ content: [{ type: "text", text: "Error ...: <message>" }], isError: true }`
+- Success return: `{ content: [{ type: "text", text: JSON.stringify(result, null, 2) }] }`
 
 ## Conventions
 
-- One file per tool in `src/docker/tools/`
-- Zod schemas exported with `Schema` suffix
+- One directory per tool in `src/docker/tools/<name>/`
+- Zod schema defined locally in the tool file (not exported)
 - No global state beyond the `docker` singleton in `client.ts`
-- Tests use `vi.mock` to mock the client — never depend on real Docker
-- Tools without prefix: `list_containers`, not `dockerpilot_list_containers`
+- Tests mock `DockerClient` directly — never depend on real Docker
+- Tools without prefix: `list_containers`, `stop_containers`, not `dockerpilot_*`
