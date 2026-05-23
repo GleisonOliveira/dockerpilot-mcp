@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import Dockerode from "dockerode";
-import { ContainerFieldResolvers } from "../../../../src/docker/tools/list/list.resolvers.js";
+import { ContainerFieldResolvers } from "../../../src/docker/shared/list.resolvers.js";
 
 const fakeInspect = {
   RestartCount: 3,
@@ -348,6 +348,11 @@ describe("ContainerFieldResolvers", () => {
     it("parses comma-separated depends_on label", () => {
       const c = { ...baseContainer, Labels: { "com.docker.compose.depends_on": "db, redis" } } as unknown as Dockerode.ContainerInfo;
       expect(ContainerFieldResolvers.dependencyInfo(c)).toEqual({ dependency_info: ["db", "redis"] });
+    });
+
+    it("strips condition suffix (service:condition:bool format)", () => {
+      const c = { ...baseContainer, Labels: { "com.docker.compose.depends_on": "api:service_started:false,db:service_healthy:true" } } as unknown as Dockerode.ContainerInfo;
+      expect(ContainerFieldResolvers.dependencyInfo(c)).toEqual({ dependency_info: ["api", "db"] });
     });
 
     it("returns empty array when depends_on absent", () => {

@@ -1,103 +1,105 @@
 # DockerPilot MCP
 
-MCP server em TypeScript que expõe comandos Docker como ferramentas para agentes de IA.
+TypeScript MCP server that exposes Docker commands as tools for AI agents.
 
-Permite que agentes (Claude, Copilot, etc.) interajam com containers Docker via protocolo MCP — sem precisar de shell direto.
+Allows agents (Claude, Copilot, etc.) to interact with Docker containers via the MCP protocol — no direct shell access needed.
 
-## Requisitos
+## Requirements
 
-- Docker rodando localmente com socket em `/var/run/docker.sock`
+- Docker running locally with socket at `/var/run/docker.sock`
 - Node.js 20+
 
-## Instalação
+## Installation
 
 ```bash
 npm install
 npm run build
 ```
 
-## Comandos
+## Scripts
 
 ```bash
-npm run dev           # roda em modo dev (tsx, sem build)
-npm run dev:watch     # compila automaticamente ao salvar (tsup --watch)
-npm run build         # compila para dist/
-npm run start         # executa dist/index.js
-npm test              # roda testes com Vitest
-npm run test:watch    # testes em modo watch
-npm run test:coverage # testes + relatório de cobertura
-npm run lint          # verifica linting
-npm run lint:fix      # corrige linting automaticamente
+npm run dev           # run in dev mode (tsx, no build)
+npm run dev:watch     # auto-compile on save (tsup --watch)
+npm run build         # compile to dist/
+npm run start         # execute dist/index.js
+npm test              # run tests with Vitest
+npm run test:watch    # tests in watch mode
+npm run test:coverage # tests + coverage report
+npm run lint          # check linting
+npm run lint:fix      # auto-fix linting issues
+npm run typecheck     # check TypeScript errors
+npm run check         # lint + typecheck + tests
 ```
 
-## Testando com MCP Inspector
+## Testing with MCP Inspector
 
-Build uma vez e inspecione:
+Build once and inspect:
 
 ```bash
 npm run build
 npx @modelcontextprotocol/inspector node dist/index.js
 ```
 
-Para desenvolvimento com recompilação automática, use dois terminais:
+For development with auto-recompilation, use two terminals:
 
 ```bash
-# Terminal 1 — recompila ao salvar
+# Terminal 1 — recompile on save
 npm run dev:watch
 
-# Terminal 2 — Inspector (recarregue o browser para pegar novas mudanças)
+# Terminal 2 — Inspector (refresh browser to pick up new changes)
 npx @modelcontextprotocol/inspector node dist/index.js
 ```
 
-## Integração com Claude Desktop
+## Claude Desktop Integration
 
-Adicione em `claude_desktop_config.json`:
+Add to `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "dockerpilot": {
       "command": "node",
-      "args": ["/caminho/para/container-commands-mcp/dist/index.js"]
+      "args": ["/path/to/container-commands-mcp/dist/index.js"]
     }
   }
 }
 ```
 
-## Arquitetura
+## Architecture
 
 ```
 src/
-  index.ts              # entrypoint: conecta servidor ao transporte stdio
-  server.ts             # registra todas as tools no McpServer
+  index.ts              # entrypoint: connects server to stdio transport
+  server.ts             # registers all tools on McpServer
   docker/
-    client.ts           # singleton Dockerode (socket /var/run/docker.sock)
+    client.ts           # Dockerode singleton (socket /var/run/docker.sock)
     tools/
       list.ts           # tool list_containers
 ```
 
-## Tools Disponíveis
+## Available Tools
 
-| Tool | Descrição |
-|------|-----------|
-| `list_containers` | Lista containers Docker. `all=true` inclui parados. |
+| Tool | Description |
+|------|-------------|
+| `list_containers` | Lists Docker containers. `all=true` includes stopped ones. |
 
-## Adicionando Nova Tool
+## Adding a New Tool
 
-1. Criar `src/docker/tools/<nome>.ts`
-2. Exportar schema Zod (`<nome>Schema`) e função assíncrona
-3. Registrar em `server.ts` com `server.registerTool(...)`
-4. Criar teste em `tests/<nome>.test.ts` com mock do client
+1. Create `src/docker/tools/<name>.ts`
+2. Export Zod schema (`<name>Schema`) and async function
+3. Register in `server.ts` with `server.registerTool(...)`
+4. Create test in `tests/<name>.test.ts` with mocked client
 
-Padrão obrigatório:
-- Validação via Zod
-- Erros Docker propagados como exceção (MCP SDK converte automaticamente)
-- Retorno sempre `{ content: [{ type: "text", text: JSON.stringify(...) }] }`
+Required pattern:
+- Zod validation
+- Docker errors propagated as exceptions (MCP SDK converts automatically)
+- Always return `{ content: [{ type: "text", text: JSON.stringify(...) }] }`
 
-## Convenções
+## Conventions
 
-- Um arquivo por tool em `src/docker/tools/`
-- Schemas Zod exportados com sufixo `Schema`
-- Sem estado global além do singleton `docker` em `client.ts`
-- Testes usam `vi.mock` para mockar o client — nunca dependem de Docker real
-- Tools sem prefixo: `list_containers`, não `dockerpilot_list_containers`
+- One file per tool in `src/docker/tools/`
+- Zod schemas exported with `Schema` suffix
+- No global state beyond the `docker` singleton in `client.ts`
+- Tests use `vi.mock` to mock the client — never depend on real Docker
+- Tools without prefix: `list_containers`, not `dockerpilot_list_containers`
