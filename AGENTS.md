@@ -11,21 +11,26 @@ Permite que agentes de IA (Claude, Copilot, etc.) interajam com containers Docke
 ```
 src/
   index.ts                        # entrypoint: conecta servidor ao transporte stdio
-  server.ts                       # registra todas as tools no McpServer
+  server.ts                       # registra tools e prompts no McpServer
   tools.config.ts                 # array com todas as ToolConstructor registradas
+  prompts.config.ts               # array com todas as PromptConstructor registradas
   di/
     tool-container.ts             # DI: instancia tools a partir de ToolConstructor[]
+    prompt-container.ts           # DI: instancia prompts a partir de PromptConstructor[]
   utils/
     try-catch.ts                  # wrapper tryCatch<T> para erros assíncronos
   docker/
     client.ts                     # singleton Dockerode (socket /var/run/docker.sock)
     shared/
       base.tool.ts                # classe abstrata BaseTool com método register()
+      base.prompt.ts              # classe abstrata BasePrompt com método register()
       list.resolvers.ts           # ContainerFieldResolvers (campos opcionais de containers)
     tools/
       list/list.tool.ts           # tool list_containers
       stop/stop.tool.ts           # tool stop_containers
       start/start.tool.ts         # tool start_containers
+    prompts/
+      container-troubleshoot.prompt.ts  # prompt container_troubleshoot
 ```
 
 ## Como Adicionar Nova Tool
@@ -44,6 +49,25 @@ Padrão obrigatório:
 - Retorno de sucesso: `{ content: [{ type: "text", text: JSON.stringify(resultado, null, 2) }] }`
 - Usar método privado `#handle` (sintaxe de campo privado JS) para o handler
 - Registrar via `this.#handle.bind(this)` no `register()`
+
+## Como Adicionar Novo Prompt
+
+1. Criar `src/docker/prompts/<nome>.prompt.ts` exportando classe `extends BasePrompt`
+2. Definir schema Zod para os argumentos do prompt
+3. Implementar `register(server)` chamando `server.registerPrompt(...)`
+4. Adicionar a classe em `src/prompts.config.ts` no array `promptClasses`
+
+Padrão obrigatório:
+- Prompts devem ser escritos em inglês
+- Schema Zod definido localmente no arquivo do prompt (não exportado)
+- Prompts não recebem `DockerClient` — são apenas mensagens orientadoras para o agente
+- `PromptConstructor` não aceita argumentos no construtor (diferente de `ToolConstructor`)
+
+## Prompts Disponíveis
+
+| Prompt | Descrição | Quando ativar |
+|--------|-----------|---------------|
+| `container_troubleshoot` | Guia de diagnóstico para problemas com containers | Usuário reporta container com erro, não iniciando, porta ocupada, crash loop, etc. |
 
 ## Requisitos
 
