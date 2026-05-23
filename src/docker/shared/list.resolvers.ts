@@ -95,7 +95,7 @@ export class ContainerFieldResolvers {
     const labels = c.Labels ?? {};
     const raw = labels["com.docker.compose.depends_on"];
     return {
-      dependency_info: raw ? raw.split(",").map((s) => s.trim()).filter(Boolean) : [],
+      dependency_info: raw ? raw.split(",").map((s) => s.trim().split(":")[0]).filter(Boolean) : [],
     };
   }
 

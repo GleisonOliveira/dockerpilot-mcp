@@ -3,7 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { DockerClient } from "../../../docker/client.js";
 import { BaseTool } from "../../shared/base.tool.js";
 import { tryCatch } from "../../../utils/try-catch.js";
-import { ContainerFieldResolvers } from "./list.resolvers.js";
+import { ContainerFieldResolvers } from "../../shared/list.resolvers.js";
 
 const VALID_STATES = ["created", "restarting", "running", "removing", "paused", "exited", "dead"] as const;
 
