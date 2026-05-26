@@ -26,11 +26,16 @@ src/
       base.prompt.ts              # classe abstrata BasePrompt com método register()
       list.resolvers.ts           # ContainerFieldResolvers (campos opcionais de containers)
     tools/
-      list/list.tool.ts           # tool list_containers
-      stop/stop.tool.ts           # tool stop_containers
-      start/start.tool.ts         # tool start_containers
+      list/list.tool.ts                 # tool list_containers
+      list-images/list-images.tool.ts   # tool list_images
+      list-volumes/list-volumes.tool.ts # tool list_volumes
+      stop/stop.tool.ts                 # tool stop_containers
+      start/start.tool.ts               # tool start_containers
+      delete/delete.tool.ts             # tool delete_container
+      delete-image/delete-image.tool.ts # tool delete_image
     prompts/
-      container-troubleshoot.prompt.ts  # prompt container_troubleshoot
+      container-troubleshoot/           # prompt container_troubleshoot
+      image-cleanup/                    # prompt image_cleanup
 ```
 
 ## Como Adicionar Nova Tool
@@ -63,11 +68,24 @@ Padrão obrigatório:
 - Prompts não recebem `DockerClient` — são apenas mensagens orientadoras para o agente
 - `PromptConstructor` não aceita argumentos no construtor (diferente de `ToolConstructor`)
 
+## Tools Disponíveis
+
+| Tool | Descrição |
+|------|-----------|
+| `list_containers` | Lista containers Docker. `all=true` inclui parados. Suporta filtros por nome, id, status e campos opcionais (portas, mounts, redes, uso, healthcheck, etc.). |
+| `list_images` | Lista imagens Docker. Suporta filtros por nome/tag, dangling e campos opcionais (digests, containers). |
+| `list_volumes` | Lista volumes Docker. Suporta filtros por nome, driver, dangling e campos opcionais (containers usando o volume, tamanho). |
+| `stop_containers` | Para containers em execução por nome ou ID. Suporta exclude, timeout, force, stopDependents e dryRun. |
+| `start_containers` | Inicia containers parados por nome ou ID. Suporta exclude, startDependencies e dryRun. |
+| `delete_container` | Remove container por ID. Requer `confirmed=true`. Exibe preview quando `confirmed=false`. Suporta `force` e `removeImage`. |
+| `delete_image` | Remove imagem por ID (curto, completo ou tag). Requer `confirmed=true`. Exibe preview quando `confirmed=false`. Suporta `force`. |
+
 ## Prompts Disponíveis
 
 | Prompt | Descrição | Quando ativar |
 |--------|-----------|---------------|
 | `container_troubleshoot` | Guia de diagnóstico para problemas com containers | Usuário reporta container com erro, não iniciando, porta ocupada, crash loop, etc. |
+| `image_cleanup` | Guia para liberar espaço em disco removendo imagens dangling | Usuário reporta pouco espaço em disco ou quer limpar imagens Docker não utilizadas. |
 
 ## Requisitos
 

@@ -4,12 +4,33 @@ TypeScript MCP server that exposes Docker commands as tools and prompts for AI a
 
 Allows agents (Claude, Copilot, etc.) to interact with Docker containers via the MCP protocol — no direct shell access needed.
 
+## Quick Start
+
+The recommended way to run DockerPilot MCP is via `npx` — no installation required:
+
+```bash
+npx dockerpilot-mcp
+```
+
+To use with Claude Desktop, add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "dockerpilot": {
+      "command": "npx",
+      "args": ["dockerpilot-mcp"]
+    }
+  }
+}
+```
+
 ## Requirements
 
 - Docker running locally with socket at `/var/run/docker.sock`
 - Node.js 20+
 
-## Installation
+## Local Development
 
 ```bash
 npm install
@@ -53,7 +74,20 @@ npx @modelcontextprotocol/inspector node dist/index.js
 
 ## Claude Desktop Integration
 
-Add to `claude_desktop_config.json`:
+**Recommended** — use `npx` (no local install needed):
+
+```json
+{
+  "mcpServers": {
+    "dockerpilot": {
+      "command": "npx",
+      "args": ["dockerpilot-mcp"]
+    }
+  }
+}
+```
+
+Or point to a local build:
 
 ```json
 {
@@ -86,26 +120,36 @@ src/
       base.prompt.ts              # abstract BasePrompt with register() method
       list.resolvers.ts           # ContainerFieldResolvers (optional container fields)
     tools/
-      list/list.tool.ts           # tool list_containers
-      stop/stop.tool.ts           # tool stop_containers
-      start/start.tool.ts         # tool start_containers
+      list/list.tool.ts                 # tool list_containers
+      list-images/list-images.tool.ts   # tool list_images
+      list-volumes/list-volumes.tool.ts # tool list_volumes
+      stop/stop.tool.ts                 # tool stop_containers
+      start/start.tool.ts               # tool start_containers
+      delete/delete.tool.ts             # tool delete_container
+      delete-image/delete-image.tool.ts # tool delete_image
     prompts/
-      container-troubleshoot.prompt.ts  # prompt container_troubleshoot
+      container-troubleshoot/           # prompt container_troubleshoot
+      image-cleanup/                    # prompt image_cleanup
 ```
 
 ## Available Tools
 
 | Tool | Description |
 |------|-------------|
-| `list_containers` | Lists Docker containers. `all=true` includes stopped ones. |
+| `list_containers` | Lists Docker containers. `all=true` includes stopped ones. Supports filters by name, id, status, and optional fields (ports, mounts, networks, usage, healthcheck, etc.). |
+| `list_images` | Lists Docker images. Supports filters by name/tag, dangling, and optional fields (digests, containers). |
+| `list_volumes` | Lists Docker volumes. Supports filters by name, driver, dangling, and optional fields (containers using each volume, usage size). |
 | `stop_containers` | Stops running containers by name or ID. Supports exclude, timeout, force, stopDependents, and dryRun. |
 | `start_containers` | Starts stopped containers by name or ID. Supports exclude, startDependencies, and dryRun. |
+| `delete_container` | Deletes a container by ID. Requires `confirmed=true`. Shows a preview when `confirmed=false`. Supports `force` and `removeImage`. |
+| `delete_image` | Deletes an image by ID (short, full, or tag). Requires `confirmed=true`. Shows a preview when `confirmed=false`. Supports `force`. |
 
 ## Available Prompts
 
 | Prompt | Description | When to activate |
 |--------|-------------|------------------|
 | `container_troubleshoot` | Diagnostic guide for Docker container problems | User reports container not working, not starting, port conflict, crash loop, etc. |
+| `image_cleanup` | Guide to reclaim disk space by removing dangling images | User reports low disk space or wants to clean up unused Docker images. |
 
 ## Adding a New Tool
 
