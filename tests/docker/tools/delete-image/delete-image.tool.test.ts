@@ -140,12 +140,10 @@ describe("DeleteImageTool", () => {
     });
 
     it("returns error when id is empty string", async () => {
-      const result = (await capturedCallback({ id: "", confirmed: true })) as {
-        content: { text: string }[];
-        isError?: boolean;
-      };
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toMatch(/id is required/);
+      const result = (await capturedCallback({ id: "", confirmed: true })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.isError).toBe(true);
+      expect(parsed.content[0].text).toMatch(/id is required/);
       expect(mockListImages).not.toHaveBeenCalled();
     });
 
