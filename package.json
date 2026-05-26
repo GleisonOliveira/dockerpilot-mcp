@@ -1,9 +1,12 @@
 {
   "name": "dockerpilot-mcp",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "MCP server for Docker container management",
   "type": "module",
   "main": "dist/index.js",
+  "author": {
+    "name": "Gleison Oliveira"
+  },
   "scripts": {
     "dev": "tsx src/index.ts",
     "dev:watch": "tsup src/index.ts --format esm --dts --watch",
@@ -37,5 +40,8 @@
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.59.4",
     "vitest": "^2.1.8"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }
