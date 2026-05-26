@@ -8,6 +8,12 @@ import { DeleteImageTool } from "./docker/tools/delete-image/delete-image.tool.j
 import { ListVolumesTool } from "./docker/tools/list-volumes/list-volumes.tool.js";
 import { CreateVolumeTool } from "./docker/tools/create-volume/create-volume.tool.js";
 import { DeleteVolumeTool } from "./docker/tools/delete-volume/delete-volume.tool.js";
+import { CreateContainerTool } from "./docker/tools/create-container/create-container.tool.js";
+import { DockerStatusTool } from "./docker/tools/docker-status/docker-status.tool.js";
+import { PullImageTool } from "./docker/tools/pull-image/pull-image.tool.js";
+import { RestartContainerTool } from "./docker/tools/restart/restart.tool.js";
+import { ExecCommandTool } from "./docker/tools/exec-command/exec-command.tool.js";
+import { ContainerLogsTool } from "./docker/tools/container-logs/container-logs.tool.js";
 
 export const toolClasses: ToolConstructor[] = [
   ListContainersTool,
@@ -19,4 +25,10 @@ export const toolClasses: ToolConstructor[] = [
   ListVolumesTool,
   CreateVolumeTool,
   DeleteVolumeTool,
+  CreateContainerTool,
+  DockerStatusTool,
+  PullImageTool,
+  RestartContainerTool,
+  ExecCommandTool,
+  ContainerLogsTool,
 ];

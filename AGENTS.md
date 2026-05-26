@@ -35,6 +35,12 @@ src/
       delete-image/delete-image.tool.ts # tool delete_image
       create-volume/create-volume.tool.ts # tool create_volume
       delete-volume/delete-volume.tool.ts # tool delete_volume
+      create-container/create-container.tool.ts # tool create_container
+      pull-image/pull-image.tool.ts       # tool pull_image
+      restart/restart.tool.ts             # tool restart_container
+      docker-status/docker-status.tool.ts # tool docker_status
+      exec-command/exec-command.tool.ts   # tool exec_command
+      container-logs/container-logs.tool.ts # tool container_logs
     prompts/
       container-troubleshoot/           # prompt container_troubleshoot
       image-cleanup/                    # prompt image_cleanup
@@ -84,6 +90,12 @@ Padrão obrigatório:
 | `delete_image` | Remove imagem por ID (curto, completo ou tag). Requer `confirmed=true`. Exibe preview quando `confirmed=false`. Suporta `force`. |
 | `create_volume` | Cria volume Docker com driver opcional (local/nfs/tmpfs/overlay2), opções de mount e configuração específica do driver. Retorna nome do volume e caminho sugerido para mount no container. |
 | `delete_volume` | Remove volume Docker por ID. Requer `confirmed=true`. Exibe preview quando `confirmed=false`. Detecta se o volume está em uso antes de remover. |
+| `create_container` | Cria e inicia um container Docker. Requer `image`. Suporta `name`, `command`, `env`, `ports`, `volumes`, `networks`, `restart_policy`, `healthcheck`, `resources` e `labels`. Faz pull da imagem automaticamente antes da criação. |
+| `pull_image` | Faz pull de uma imagem Docker do registry pelo nome e tag opcional (ex: `nginx:latest`). Retorna id, tags e tamanho da imagem após pull bem-sucedido. |
+| `restart_container` | Reinicia um container Docker por nome ou prefixo de ID. Retorna id, nome e status do container após reinicialização. |
+| `docker_status` | Retorna saúde e informações do daemon Docker: versão do engine, contadores de containers, uso de disco (imagens, volumes, build cache), plugins, estado do Swarm e avisos do daemon. Sem parâmetros. |
+| `exec_command` | Executa um comando dentro de um container Docker em execução. Aceita ID do container (completo ou prefixo) — nomes NÃO são aceitos. Retorna saída stdout/stderr e o código de saída do comando. |
+| `container_logs` | Busca as últimas N linhas de log de um container Docker. Aceita ID do container (completo ou prefixo) — nomes NÃO são aceitos. Retorna stdout e stderr combinados. Padrão: últimas 5 linhas. |
 
 ## Prompts Disponíveis
 

@@ -121,6 +121,12 @@ Then use `node /path/to/container-commands-mcp/dist/index.js` as the command in 
 | `delete_image` | Deletes an image by ID (short, full, or tag). Requires `confirmed=true`. Shows a preview when `confirmed=false`. Supports `force`. |
 | `create_volume` | Creates a Docker volume with optional driver (local/nfs/tmpfs/overlay2), mount options, and driver-specific configuration. Returns volume name and suggested container mount path. |
 | `delete_volume` | Deletes a Docker volume by ID. Requires `confirmed=true`. Shows a preview when `confirmed=false`. Detects if volume is in use before deletion. |
+| `create_container` | Creates and starts a Docker container. Requires `image`. Supports `name`, `command`, `env`, `ports`, `volumes`, `networks`, `restart_policy`, `healthcheck`, `resources`, and `labels`. Pulls the image automatically before creation. |
+| `pull_image` | Pulls a Docker image from a registry by name and optional tag (e.g. `nginx:latest`). Returns image id, tags, and size after a successful pull. |
+| `restart_container` | Restarts a Docker container by name or ID prefix. Returns container id, name, and status after restart. |
+| `docker_status` | Returns Docker daemon health and system information: engine version, container counts, disk usage (images, volumes, build cache), plugins, Swarm state, and daemon warnings. No parameters required. |
+| `exec_command` | Executes a command inside a running Docker container. Accepts container ID (full or prefix) — names are NOT accepted. Returns stdout/stderr output and the command exit code. |
+| `container_logs` | Fetches the last N log lines from a Docker container. Accepts container ID (full or prefix) — names are NOT accepted. Returns stdout and stderr combined. Defaults to last 5 lines. |
 
 ## Available Prompts
 
@@ -159,6 +165,12 @@ src/
       delete-image/delete-image.tool.ts # tool delete_image
       create-volume/create-volume.tool.ts # tool create_volume
       delete-volume/delete-volume.tool.ts # tool delete_volume
+      create-container/create-container.tool.ts # tool create_container
+      pull-image/pull-image.tool.ts       # tool pull_image
+      restart/restart.tool.ts             # tool restart_container
+      docker-status/docker-status.tool.ts # tool docker_status
+      exec-command/exec-command.tool.ts   # tool exec_command
+      container-logs/container-logs.tool.ts # tool container_logs
     prompts/
       container-troubleshoot/           # prompt container_troubleshoot
       image-cleanup/                    # prompt image_cleanup
