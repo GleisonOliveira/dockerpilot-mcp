@@ -6,6 +6,8 @@ import { StartContainersTool } from "./docker/tools/start/start.tool.js";
 import { DeleteContainerTool } from "./docker/tools/delete/delete.tool.js";
 import { DeleteImageTool } from "./docker/tools/delete-image/delete-image.tool.js";
 import { ListVolumesTool } from "./docker/tools/list-volumes/list-volumes.tool.js";
+import { CreateVolumeTool } from "./docker/tools/create-volume/create-volume.tool.js";
+import { DeleteVolumeTool } from "./docker/tools/delete-volume/delete-volume.tool.js";
 
 export const toolClasses: ToolConstructor[] = [
   ListContainersTool,
@@ -15,4 +17,6 @@ export const toolClasses: ToolConstructor[] = [
   DeleteContainerTool,
   DeleteImageTool,
   ListVolumesTool,
+  CreateVolumeTool,
+  DeleteVolumeTool,
 ];
