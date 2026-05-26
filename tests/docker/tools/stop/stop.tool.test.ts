@@ -73,7 +73,7 @@ describe("StopContainersTool", () => {
     it("returns wouldStop list without calling stop", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
 
-      const result = await capturedCallback({ dryRun: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.dryRun).toBe(true);
@@ -87,7 +87,7 @@ describe("StopContainersTool", () => {
     it("dryRun respects name filter", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
 
-      const result = await capturedCallback({ dryRun: true, names: ["web"] }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: true, names: ["web"] })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.wouldStop).toHaveLength(1);
@@ -97,7 +97,7 @@ describe("StopContainersTool", () => {
     it("includes force=false and timeout=10 by default", async () => {
       mockListContainers.mockResolvedValue([containerA]);
 
-      const result = await capturedCallback({ dryRun: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.force).toBe(false);
@@ -107,7 +107,7 @@ describe("StopContainersTool", () => {
     it("includes force=true and timeout=null when force specified", async () => {
       mockListContainers.mockResolvedValue([containerA]);
 
-      const result = await capturedCallback({ dryRun: true, force: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: true, force: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.force).toBe(true);
@@ -117,7 +117,7 @@ describe("StopContainersTool", () => {
     it("includes custom timeout when specified", async () => {
       mockListContainers.mockResolvedValue([containerA]);
 
-      const result = await capturedCallback({ dryRun: true, timeout: 30 }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: true, timeout: 30 })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.force).toBe(false);
@@ -127,7 +127,7 @@ describe("StopContainersTool", () => {
     it("dryRun respects exclude", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
 
-      const result = await capturedCallback({ dryRun: true, exclude: ["db"] }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: true, exclude: ["db"] })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.wouldStop).toHaveLength(1);
@@ -139,7 +139,7 @@ describe("StopContainersTool", () => {
     it("dryRun is true by default — does not call stop without explicit dryRun: false", async () => {
       mockListContainers.mockResolvedValue([containerA]);
 
-      const result = await capturedCallback({}) as { content: { text: string }[] };
+      const result = (await capturedCallback({})) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.dryRun).toBe(true);
@@ -151,7 +151,7 @@ describe("StopContainersTool", () => {
     it("stops all running containers when no names or ids given", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: false })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.dryRun).toBe(false);
@@ -180,7 +180,9 @@ describe("StopContainersTool", () => {
     it("stops only containers matching name", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB, containerC]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["web"] }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: false, names: ["web"] })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(1);
@@ -191,7 +193,9 @@ describe("StopContainersTool", () => {
     it("name filter is case-insensitive and partial match", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB, containerC]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["WEB"] }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: false, names: ["WEB"] })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(1);
@@ -201,7 +205,9 @@ describe("StopContainersTool", () => {
     it("stops multiple containers matching different names", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB, containerC]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["web", "db"] }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: false, names: ["web", "db"] })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(2);
@@ -212,7 +218,9 @@ describe("StopContainersTool", () => {
     it("stops container matching id prefix", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB, containerC]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, ids: ["aaa111"] }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: false, ids: ["aaa111"] })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(1);
@@ -222,7 +230,9 @@ describe("StopContainersTool", () => {
     it("stops multiple containers by id", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB, containerC]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, ids: ["aaa111", "ddd444"] }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: false, ids: ["aaa111", "ddd444"] })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(2);
@@ -233,7 +243,9 @@ describe("StopContainersTool", () => {
     it("matches container if it matches name OR id", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB, containerC]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["db"], ids: ["ggg777"] }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: false, names: ["db"], ids: ["ggg777"] })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(2);
@@ -247,7 +259,9 @@ describe("StopContainersTool", () => {
     it("excludes container by name", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB, containerC]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, exclude: ["db"] }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: false, exclude: ["db"] })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
 
       const names = parsed.results.map((r: { name: string }) => r.name);
@@ -259,7 +273,9 @@ describe("StopContainersTool", () => {
     it("excludes container by short id", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, exclude: ["aaa111bbb222"] }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: false, exclude: ["aaa111bbb222"] })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(1);
@@ -269,7 +285,9 @@ describe("StopContainersTool", () => {
     it("excludes multiple containers", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB, containerC]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, exclude: ["web", "cache"] }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: false, exclude: ["web", "cache"] })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(1);
@@ -290,7 +308,9 @@ describe("StopContainersTool", () => {
     it("reports stopped=true on successful kill", async () => {
       mockListContainers.mockResolvedValue([containerA]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, force: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: false, force: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results[0].stopped).toBe(true);
@@ -300,11 +320,9 @@ describe("StopContainersTool", () => {
   describe("partial failures", () => {
     it("reports stopped=false with error when stop fails for a container", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
-      mockStop
-        .mockResolvedValueOnce(undefined)
-        .mockRejectedValueOnce(new Error("permission denied"));
+      mockStop.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error("permission denied"));
 
-      const result = await capturedCallback({ dryRun: false, summarized: false }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: false })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       const stopped = parsed.results.find((r: { name: string }) => r.name === "web");
@@ -319,7 +337,9 @@ describe("StopContainersTool", () => {
       mockListContainers.mockResolvedValue([containerA]);
       mockKill.mockRejectedValueOnce(new Error("no such container"));
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, force: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: false, force: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results[0].stopped).toBe(false);
@@ -331,7 +351,7 @@ describe("StopContainersTool", () => {
     it("returns empty wouldStop when no running containers (dryRun default)", async () => {
       mockListContainers.mockResolvedValue([]);
 
-      const result = await capturedCallback({}) as { content: { text: string }[] };
+      const result = (await capturedCallback({})) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.wouldStop).toHaveLength(0);
@@ -341,7 +361,9 @@ describe("StopContainersTool", () => {
     it("returns empty results when filter matches nothing", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["nonexistent"] }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: false, names: ["nonexistent"] })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(0);
@@ -356,7 +378,12 @@ describe("StopContainersTool", () => {
 
       mockListContainers.mockResolvedValue([db, web]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["db"], stopDependents: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({
+        dryRun: false,
+        summarized: false,
+        names: ["db"],
+        stopDependents: true,
+      })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(2);
@@ -371,7 +398,12 @@ describe("StopContainersTool", () => {
 
       mockListContainers.mockResolvedValue([db, web]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["db"], stopDependents: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({
+        dryRun: false,
+        summarized: false,
+        names: ["db"],
+        stopDependents: true,
+      })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       const dbResult = parsed.results.find((r: { name: string }) => r.name === "db");
@@ -387,7 +419,9 @@ describe("StopContainersTool", () => {
 
       mockListContainers.mockResolvedValue([db, web]);
 
-      const result = await capturedCallback({ dryRun: true, names: ["db"], stopDependents: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: true, names: ["db"], stopDependents: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.stopDependents).toBe(true);
@@ -406,7 +440,12 @@ describe("StopContainersTool", () => {
 
       mockListContainers.mockResolvedValue([db, web]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["db"], stopDependents: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({
+        dryRun: false,
+        summarized: false,
+        names: ["db"],
+        stopDependents: true,
+      })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(1);
@@ -419,7 +458,12 @@ describe("StopContainersTool", () => {
 
       mockListContainers.mockResolvedValue([db, web]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["db"], stopDependents: false }) as { content: { text: string }[] };
+      const result = (await capturedCallback({
+        dryRun: false,
+        summarized: false,
+        names: ["db"],
+        stopDependents: false,
+      })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(1);
@@ -432,7 +476,13 @@ describe("StopContainersTool", () => {
 
       mockListContainers.mockResolvedValue([db, web]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["db"], stopDependents: true, exclude: ["web"] }) as { content: { text: string }[] };
+      const result = (await capturedCallback({
+        dryRun: false,
+        summarized: false,
+        names: ["db"],
+        stopDependents: true,
+        exclude: ["web"],
+      })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(1);
@@ -446,7 +496,12 @@ describe("StopContainersTool", () => {
 
       mockListContainers.mockResolvedValue([a, b, c]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["a"], stopDependents: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({
+        dryRun: false,
+        summarized: false,
+        names: ["a"],
+        stopDependents: true,
+      })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.results).toHaveLength(3);
@@ -463,7 +518,12 @@ describe("StopContainersTool", () => {
 
       mockListContainers.mockResolvedValue([a, b, c]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false, names: ["a"], stopDependents: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({
+        dryRun: false,
+        summarized: false,
+        names: ["a"],
+        stopDependents: true,
+      })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       const names = parsed.results.map((r: { name: string }) => r.name);
@@ -478,7 +538,9 @@ describe("StopContainersTool", () => {
 
       mockListContainers.mockResolvedValue([a, b, c]);
 
-      const result = await capturedCallback({ dryRun: true, names: ["a"], stopDependents: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: true, names: ["a"], stopDependents: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.wouldStop).toHaveLength(3);
@@ -492,7 +554,7 @@ describe("StopContainersTool", () => {
     it("returns { success: true } by default on successful real run", async () => {
       mockListContainers.mockResolvedValue([containerA]);
 
-      const result = await capturedCallback({ dryRun: false }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed).toEqual({ success: true });
@@ -501,7 +563,7 @@ describe("StopContainersTool", () => {
     it("returns { success: true } when summarized=true explicitly", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed).toEqual({ success: true });
@@ -510,7 +572,7 @@ describe("StopContainersTool", () => {
     it("returns full result list when summarized=false", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
 
-      const result = await capturedCallback({ dryRun: false, summarized: false }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: false, summarized: false })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.dryRun).toBe(false);
@@ -520,7 +582,7 @@ describe("StopContainersTool", () => {
     it("dryRun ignores summarized — always returns wouldStop list", async () => {
       mockListContainers.mockResolvedValue([containerA]);
 
-      const result = await capturedCallback({ dryRun: true, summarized: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: true, summarized: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.dryRun).toBe(true);
@@ -530,7 +592,10 @@ describe("StopContainersTool", () => {
     it("does not suppress error responses when summarized=true", async () => {
       mockCheckConnection.mockRejectedValueOnce(new Error("Docker is not running"));
 
-      const result = await capturedCallback({ dryRun: false, summarized: true }) as { content: { text: string }[]; isError: boolean };
+      const result = (await capturedCallback({ dryRun: false, summarized: true })) as {
+        content: { text: string }[];
+        isError: boolean;
+      };
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Docker is not running");
@@ -541,7 +606,7 @@ describe("StopContainersTool", () => {
     it("returns isError when checkConnection throws", async () => {
       mockCheckConnection.mockRejectedValueOnce(new Error("Docker is not running"));
 
-      const result = await capturedCallback({}) as { content: { text: string }[]; isError: boolean };
+      const result = (await capturedCallback({})) as { content: { text: string }[]; isError: boolean };
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Docker is not running");
@@ -550,7 +615,7 @@ describe("StopContainersTool", () => {
     it("returns isError when listContainers throws", async () => {
       mockListContainers.mockRejectedValueOnce(new Error("socket hang up"));
 
-      const result = await capturedCallback({}) as { content: { text: string }[]; isError: boolean };
+      const result = (await capturedCallback({})) as { content: { text: string }[]; isError: boolean };
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("socket hang up");

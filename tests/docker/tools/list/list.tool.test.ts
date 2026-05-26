@@ -52,7 +52,7 @@ const fakeContainerRaw = {
     "com.docker.compose.project.working_dir": "/home/user/myproject",
     "com.docker.compose.container-number": "1",
     "com.docker.compose.depends_on": "db, redis",
-    "app": "nginx",
+    app: "nginx",
   },
   NetworkSettings: {
     Networks: {
@@ -83,9 +83,7 @@ const fakeInspect = {
     Health: {
       Status: "healthy",
       FailingStreak: 0,
-      Log: [
-        { Start: "2024-01-01T00:00:00Z", End: "2024-01-01T00:00:01Z", ExitCode: 0, Output: "OK" },
-      ],
+      Log: [{ Start: "2024-01-01T00:00:00Z", End: "2024-01-01T00:00:01Z", ExitCode: 0, Output: "OK" }],
     },
   },
   HostConfig: {
@@ -103,6 +101,7 @@ const fakeInspect = {
 
 type CallbackInput = {
   all: boolean;
+  id?: string;
   name?: string;
   status?: string;
   includePorts?: boolean;
@@ -140,7 +139,7 @@ describe("ListContainersTool", () => {
     it("returns id, names, image, status, state without any include flag", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
 
-      const result = await capturedCallback({ all: false }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed[0]).toEqual({
@@ -155,7 +154,7 @@ describe("ListContainersTool", () => {
     it("does not include ports, mounts, networks, usage without flags", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
 
-      const result = await capturedCallback({ all: false }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed[0]).not.toHaveProperty("ports");
@@ -178,7 +177,7 @@ describe("ListContainersTool", () => {
 
     it("returns empty array when no containers", async () => {
       mockListContainers.mockResolvedValue([]);
-      const result = await capturedCallback({ all: false }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false })) as { content: { text: string }[] };
       expect(JSON.parse(result.content[0].text)).toEqual([]);
     });
   });
@@ -187,12 +186,10 @@ describe("ListContainersTool", () => {
     it("includes ports and no other optional fields", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
 
-      const result = await capturedCallback({ all: false, includePorts: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includePorts: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
-      expect(parsed[0].ports).toEqual([
-        { IP: "0.0.0.0", PrivatePort: 80, PublicPort: 8080, Type: "tcp" },
-      ]);
+      expect(parsed[0].ports).toEqual([{ IP: "0.0.0.0", PrivatePort: 80, PublicPort: 8080, Type: "tcp" }]);
       expect(parsed[0]).not.toHaveProperty("mounts");
       expect(parsed[0]).not.toHaveProperty("networks");
       expect(parsed[0]).not.toHaveProperty("usage");
@@ -203,12 +200,10 @@ describe("ListContainersTool", () => {
     it("includes mounts and no other optional fields", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
 
-      const result = await capturedCallback({ all: false, includeMounts: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeMounts: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
-      expect(parsed[0].mounts).toEqual([
-        { Type: "bind", Source: "/host/data", Destination: "/data" },
-      ]);
+      expect(parsed[0].mounts).toEqual([{ Type: "bind", Source: "/host/data", Destination: "/data" }]);
       expect(parsed[0]).not.toHaveProperty("ports");
       expect(parsed[0]).not.toHaveProperty("networks");
       expect(parsed[0]).not.toHaveProperty("usage");
@@ -219,7 +214,7 @@ describe("ListContainersTool", () => {
     it("includes networks with ip, gateway, mac, network_id", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
 
-      const result = await capturedCallback({ all: false, includeNetworks: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeNetworks: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed[0].networks).toEqual([
@@ -234,11 +229,9 @@ describe("ListContainersTool", () => {
     });
 
     it("returns empty networks array when container has no networks", async () => {
-      mockListContainers.mockResolvedValue([
-        { ...fakeContainerRaw, NetworkSettings: { Networks: {} } },
-      ]);
+      mockListContainers.mockResolvedValue([{ ...fakeContainerRaw, NetworkSettings: { Networks: {} } }]);
 
-      const result = await capturedCallback({ all: false, includeNetworks: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeNetworks: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed[0].networks).toEqual([]);
@@ -249,7 +242,7 @@ describe("ListContainersTool", () => {
     it("calculates cpu_percent correctly", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
 
-      const result = await capturedCallback({ all: false, includeUsage: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeUsage: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       // cpuDelta=1e9, systemDelta=1e10, numCpus=2 → (1e9/1e10)*2*100 = 20
@@ -259,7 +252,7 @@ describe("ListContainersTool", () => {
     it("calculates mem_usage_mb discounting cache", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
 
-      const result = await capturedCallback({ all: false, includeUsage: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeUsage: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       // usage=200MB, cache=50MB → 150MB
@@ -269,7 +262,7 @@ describe("ListContainersTool", () => {
     it("calculates mem_limit_mb correctly", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
 
-      const result = await capturedCallback({ all: false, includeUsage: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeUsage: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed[0].usage.mem_limit_mb).toBe(1024);
@@ -278,7 +271,7 @@ describe("ListContainersTool", () => {
     it("calculates mem_percent correctly", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
 
-      const result = await capturedCallback({ all: false, includeUsage: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeUsage: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       // 150MB / 1024MB = 14.65%
@@ -290,7 +283,7 @@ describe("ListContainersTool", () => {
         { ...fakeContainerRaw, Id: "aaa000bbb111ccc", State: "exited", Status: "Exited (0) 1 hour ago" },
       ]);
 
-      const result = await capturedCallback({ all: true, includeUsage: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: true, includeUsage: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed[0].usage).toBeNull();
@@ -301,7 +294,7 @@ describe("ListContainersTool", () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
       mockStats.mockRejectedValueOnce(new Error("permission denied"));
 
-      const result = await capturedCallback({ all: false, includeUsage: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeUsage: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed[0].usage).toBeNull();
@@ -320,19 +313,65 @@ describe("ListContainersTool", () => {
     it("returns all requested fields when all flags true", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
 
-      const result = await capturedCallback({
+      const result = (await capturedCallback({
         all: false,
         includePorts: true,
         includeMounts: true,
         includeNetworks: true,
         includeUsage: true,
-      }) as { content: { text: string }[] };
+      })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed[0]).toHaveProperty("ports");
       expect(parsed[0]).toHaveProperty("mounts");
       expect(parsed[0]).toHaveProperty("networks");
       expect(parsed[0]).toHaveProperty("usage");
+    });
+  });
+
+  describe("id filter", () => {
+    const containerA = { ...fakeContainerRaw, Id: "aaa111bbb222ccc333", Names: ["/my-app"] };
+    const containerB = { ...fakeContainerRaw, Id: "ddd333eee444fff555", Names: ["/postgres-db"] };
+
+    it("filters by partial id match", async () => {
+      mockListContainers.mockResolvedValue([containerA, containerB]);
+
+      const result = (await capturedCallback({ all: false, id: "aaa111" })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(parsed).toHaveLength(1);
+      expect(parsed[0].names).toEqual(["/my-app"]);
+    });
+
+    it("id filter takes precedence over name", async () => {
+      mockListContainers.mockResolvedValue([containerA, containerB]);
+
+      const result = (await capturedCallback({ all: false, id: "ddd333", name: "my-app" })) as {
+        content: { text: string }[];
+      };
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(parsed).toHaveLength(1);
+      expect(parsed[0].names).toEqual(["/postgres-db"]);
+    });
+
+    it("id filter is case-insensitive", async () => {
+      mockListContainers.mockResolvedValue([containerA, containerB]);
+
+      const result = (await capturedCallback({ all: false, id: "AAA111" })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(parsed).toHaveLength(1);
+      expect(parsed[0].names).toEqual(["/my-app"]);
+    });
+
+    it("returns empty array when no container matches id", async () => {
+      mockListContainers.mockResolvedValue([containerA, containerB]);
+
+      const result = (await capturedCallback({ all: false, id: "zzz999" })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(parsed).toEqual([]);
     });
   });
 
@@ -343,7 +382,7 @@ describe("ListContainersTool", () => {
     it("returns all containers when name not provided", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
 
-      const result = await capturedCallback({ all: false }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed).toHaveLength(2);
@@ -352,7 +391,7 @@ describe("ListContainersTool", () => {
     it("filters containers by partial name match", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
 
-      const result = await capturedCallback({ all: false, name: "postgres" }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, name: "postgres" })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed).toHaveLength(1);
@@ -362,7 +401,7 @@ describe("ListContainersTool", () => {
     it("filter is case-insensitive", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
 
-      const result = await capturedCallback({ all: false, name: "MY-APP" }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, name: "MY-APP" })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed).toHaveLength(1);
@@ -372,7 +411,7 @@ describe("ListContainersTool", () => {
     it("returns empty array when no container matches name", async () => {
       mockListContainers.mockResolvedValue([containerA, containerB]);
 
-      const result = await capturedCallback({ all: false, name: "redis" }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, name: "redis" })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed).toEqual([]);
@@ -419,16 +458,18 @@ describe("ListContainersTool", () => {
   describe("includeLabels=true", () => {
     it("includes labels map", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
-      const result = await capturedCallback({ all: false, includeLabels: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeLabels: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
-      expect(parsed[0].labels).toMatchObject({ "app": "nginx" });
+      expect(parsed[0].labels).toMatchObject({ app: "nginx" });
     });
   });
 
   describe("includeHealthcheck=true", () => {
     it("includes healthcheck status and last log", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
-      const result = await capturedCallback({ all: false, includeHealthcheck: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeHealthcheck: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed[0].healthcheck).toEqual({
         status: "healthy",
@@ -440,7 +481,9 @@ describe("ListContainersTool", () => {
     it("returns healthcheck=null when container has no health config", async () => {
       mockInspect.mockResolvedValueOnce({ ...fakeInspect, State: { ...fakeInspect.State, Health: undefined } });
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
-      const result = await capturedCallback({ all: false, includeHealthcheck: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeHealthcheck: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed[0].healthcheck).toBeNull();
     });
@@ -448,7 +491,9 @@ describe("ListContainersTool", () => {
     it("returns healthcheck=null when inspect throws", async () => {
       mockInspect.mockRejectedValueOnce(new Error("permission denied"));
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
-      const result = await capturedCallback({ all: false, includeHealthcheck: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeHealthcheck: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed[0].healthcheck).toBeNull();
     });
@@ -457,7 +502,9 @@ describe("ListContainersTool", () => {
   describe("includeRestartInfo=true", () => {
     it("includes restart policy and restart count", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
-      const result = await capturedCallback({ all: false, includeRestartInfo: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeRestartInfo: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed[0].restart_info).toEqual({
         policy: "always",
@@ -469,7 +516,9 @@ describe("ListContainersTool", () => {
     it("returns restart_info=null when inspect throws", async () => {
       mockInspect.mockRejectedValueOnce(new Error("fail"));
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
-      const result = await capturedCallback({ all: false, includeRestartInfo: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeRestartInfo: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed[0].restart_info).toBeNull();
     });
@@ -478,7 +527,9 @@ describe("ListContainersTool", () => {
   describe("includeComposeMetadata=true", () => {
     it("includes compose project and service", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
-      const result = await capturedCallback({ all: false, includeComposeMetadata: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeComposeMetadata: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed[0].compose_metadata).toMatchObject({
         project: "myproject",
@@ -489,7 +540,9 @@ describe("ListContainersTool", () => {
 
     it("returns compose_metadata=null for non-compose containers", async () => {
       mockListContainers.mockResolvedValue([{ ...fakeContainerRaw, Labels: {} }]);
-      const result = await capturedCallback({ all: false, includeComposeMetadata: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeComposeMetadata: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed[0].compose_metadata).toBeNull();
     });
@@ -498,14 +551,18 @@ describe("ListContainersTool", () => {
   describe("includeDependencyInfo=true", () => {
     it("includes parsed dependency list", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
-      const result = await capturedCallback({ all: false, includeDependencyInfo: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeDependencyInfo: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed[0].dependency_info).toEqual(["db", "redis"]);
     });
 
     it("returns empty array when no depends_on label", async () => {
       mockListContainers.mockResolvedValue([{ ...fakeContainerRaw, Labels: {} }]);
-      const result = await capturedCallback({ all: false, includeDependencyInfo: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeDependencyInfo: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed[0].dependency_info).toEqual([]);
     });
@@ -514,7 +571,9 @@ describe("ListContainersTool", () => {
   describe("includeResourceLimits=true", () => {
     it("includes memory and cpu limits", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
-      const result = await capturedCallback({ all: false, includeResourceLimits: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeResourceLimits: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed[0].resource_limits).toMatchObject({
         memory_mb: 512,
@@ -528,7 +587,9 @@ describe("ListContainersTool", () => {
     it("returns resource_limits=null when inspect throws", async () => {
       mockInspect.mockRejectedValueOnce(new Error("fail"));
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
-      const result = await capturedCallback({ all: false, includeResourceLimits: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeResourceLimits: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed[0].resource_limits).toBeNull();
     });
@@ -537,7 +598,9 @@ describe("ListContainersTool", () => {
   describe("includeStateDetails=true", () => {
     it("includes pid, exit_code, started_at and boolean flags", async () => {
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
-      const result = await capturedCallback({ all: false, includeStateDetails: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeStateDetails: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed[0].state_details).toMatchObject({
         pid: 1234,
@@ -554,7 +617,9 @@ describe("ListContainersTool", () => {
     it("returns state_details=null when inspect throws", async () => {
       mockInspect.mockRejectedValueOnce(new Error("fail"));
       mockListContainers.mockResolvedValue([fakeContainerRaw]);
-      const result = await capturedCallback({ all: false, includeStateDetails: true }) as { content: { text: string }[] };
+      const result = (await capturedCallback({ all: false, includeStateDetails: true })) as {
+        content: { text: string }[];
+      };
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed[0].state_details).toBeNull();
     });
@@ -564,7 +629,7 @@ describe("ListContainersTool", () => {
     it("returns isError when listContainers throws", async () => {
       mockListContainers.mockRejectedValue(new Error("socket hang up"));
 
-      const result = await capturedCallback({ all: false }) as { content: { text: string }[]; isError: boolean };
+      const result = (await capturedCallback({ all: false })) as { content: { text: string }[]; isError: boolean };
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("socket hang up");
@@ -573,7 +638,7 @@ describe("ListContainersTool", () => {
     it("returns isError when Docker is not running", async () => {
       mockCheckConnection.mockRejectedValueOnce(new Error("Docker is not running"));
 
-      const result = await capturedCallback({ all: false }) as { content: { text: string }[]; isError: boolean };
+      const result = (await capturedCallback({ all: false })) as { content: { text: string }[]; isError: boolean };
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Docker is not running");

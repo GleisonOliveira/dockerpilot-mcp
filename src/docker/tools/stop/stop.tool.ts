@@ -6,14 +6,44 @@ import { BaseTool } from "../../shared/base.tool.js";
 import { tryCatch } from "../../../utils/try-catch.js";
 
 const schema = z.object({
-  names: z.array(z.string()).optional().describe("Container names to stop (partial match, case-insensitive). Omit to stop all running containers."),
-  ids: z.array(z.string()).optional().describe("Container IDs to stop (prefix match). Omit to stop all running containers."),
+  names: z
+    .array(z.string())
+    .optional()
+    .describe("Container names to stop (partial match, case-insensitive). Omit to stop all running containers."),
+  ids: z
+    .array(z.string())
+    .optional()
+    .describe("Container IDs to stop (prefix match). Omit to stop all running containers."),
   exclude: z.array(z.string()).optional().describe("Container names or IDs to exclude from stopping."),
-  timeout: z.number().int().min(0).optional().default(10).describe("Seconds to wait before killing the container (default: 10)."),
+  timeout: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .default(10)
+    .describe("Seconds to wait before killing the container (default: 10)."),
   force: z.boolean().optional().default(false).describe("Force stop by sending SIGKILL immediately."),
-  stopDependents: z.boolean().optional().default(false).describe("Also stop containers that depend on the targets (via Docker Compose depends_on labels), resolved recursively. Only applies within the same Compose project."),
-  summarized: z.boolean().optional().default(true).describe("When true (default), returns only { success: true } on a successful real run. Set to false to get the full per-container result list."),
-  dryRun: z.boolean().optional().default(false).describe("Preview which containers would be stopped without actually stopping them. Default is false — set to true to preview."),
+  stopDependents: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      "Also stop containers that depend on the targets (via Docker Compose depends_on labels), resolved recursively. Only applies within the same Compose project.",
+    ),
+  summarized: z
+    .boolean()
+    .optional()
+    .default(true)
+    .describe(
+      "When true (default), returns only { success: true } on a successful real run. Set to false to get the full per-container result list.",
+    ),
+  dryRun: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      "Preview which containers would be stopped without actually stopping them. Default is false — set to true to preview.",
+    ),
 });
 
 type Input = z.infer<typeof schema>;
@@ -60,13 +90,9 @@ export class StopContainersTool extends BaseTool {
       if (this.#isExcluded(excluded, c.Id, c.Names)) return false;
       if (!hasFilters) return true;
 
-      const matchesName = names?.some((n) =>
-        c.Names.some((cn) => cn.toLowerCase().includes(n.toLowerCase()))
-      ) ?? false;
+      const matchesName = names?.some((n) => c.Names.some((cn) => cn.toLowerCase().includes(n.toLowerCase()))) ?? false;
 
-      const matchesId = ids?.some((id) =>
-        c.Id.toLowerCase().startsWith(id.toLowerCase())
-      ) ?? false;
+      const matchesId = ids?.some((id) => c.Id.toLowerCase().startsWith(id.toLowerCase())) ?? false;
 
       return matchesName || matchesId;
     });
@@ -94,9 +120,7 @@ export class StopContainersTool extends BaseTool {
         const deps = raw.split(",").map((s) => s.trim().split(":")[0].toLowerCase());
         const cProject = this.#getProject(c);
 
-        return frontier.some(
-          (t) => this.#getProject(t) === cProject && deps.includes(this.#getService(t))
-        );
+        return frontier.some((t) => this.#getProject(t) === cProject && deps.includes(this.#getService(t)));
       });
 
       for (const d of newDependents) resolvedIds.add(d.Id);
@@ -121,9 +145,8 @@ export class StopContainersTool extends BaseTool {
 
       const targetIds = new Set(primaryTargets.map((c) => c.Id));
 
-      const dependents = (input.stopDependents ?? false)
-        ? this.#resolveDependents(allRunning, primaryTargets, targetIds, excluded)
-        : [];
+      const dependents =
+        (input.stopDependents ?? false) ? this.#resolveDependents(allRunning, primaryTargets, targetIds, excluded) : [];
 
       const targets = input.stopDependents
         ? [...dependents.filter((d) => !targetIds.has(d.Id)), ...primaryTargets]
@@ -158,13 +181,11 @@ export class StopContainersTool extends BaseTool {
               : { id, name, dependent, stopped: false, error: r.error };
           }
 
-          const r = await tryCatch(() =>
-            docker.getContainer(c.Id).stop({ t: input.timeout ?? 10 })
-          );
+          const r = await tryCatch(() => docker.getContainer(c.Id).stop({ t: input.timeout ?? 10 }));
           return r.success
             ? { id, name, dependent, stopped: true }
             : { id, name, dependent, stopped: false, error: r.error };
-        })
+        }),
       );
 
       if (input.summarized ?? true) return { success: true };
@@ -197,7 +218,7 @@ export class StopContainersTool extends BaseTool {
           "Use dryRun=true to preview what would be stopped without taking action.",
         inputSchema: schema.shape,
       },
-      this.#handle.bind(this)
+      this.#handle.bind(this),
     );
   }
 }

@@ -6,12 +6,36 @@ import { BaseTool } from "../../shared/base.tool.js";
 import { tryCatch } from "../../../utils/try-catch.js";
 
 const schema = z.object({
-  names: z.array(z.string()).optional().describe("Container names to start (partial match, case-insensitive). Omit to start all stopped containers."),
-  ids: z.array(z.string()).optional().describe("Container IDs to start (prefix match). Omit to start all stopped containers."),
+  names: z
+    .array(z.string())
+    .optional()
+    .describe("Container names to start (partial match, case-insensitive). Omit to start all stopped containers."),
+  ids: z
+    .array(z.string())
+    .optional()
+    .describe("Container IDs to start (prefix match). Omit to start all stopped containers."),
   exclude: z.array(z.string()).optional().describe("Container names or IDs to exclude from starting."),
-  startDependencies: z.boolean().optional().default(false).describe("Also start containers that the targets depend on (via Docker Compose depends_on labels), resolved recursively. Only applies within the same Compose project."),
-  summarized: z.boolean().optional().default(true).describe("When true (default), returns only { success: true } on a successful real run. Set to false to get the full per-container result list."),
-  dryRun: z.boolean().optional().default(false).describe("Preview which containers would be started without actually starting them. Default is false — set to true to preview."),
+  startDependencies: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      "Also start containers that the targets depend on (via Docker Compose depends_on labels), resolved recursively. Only applies within the same Compose project.",
+    ),
+  summarized: z
+    .boolean()
+    .optional()
+    .default(true)
+    .describe(
+      "When true (default), returns only { success: true } on a successful real run. Set to false to get the full per-container result list.",
+    ),
+  dryRun: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      "Preview which containers would be started without actually starting them. Default is false — set to true to preview.",
+    ),
 });
 
 type Input = z.infer<typeof schema>;
@@ -58,13 +82,9 @@ export class StartContainersTool extends BaseTool {
       if (this.#isExcluded(excluded, c.Id, c.Names)) return false;
       if (!hasFilters) return true;
 
-      const matchesName = names?.some((n) =>
-        c.Names.some((cn) => cn.toLowerCase().includes(n.toLowerCase()))
-      ) ?? false;
+      const matchesName = names?.some((n) => c.Names.some((cn) => cn.toLowerCase().includes(n.toLowerCase()))) ?? false;
 
-      const matchesId = ids?.some((id) =>
-        c.Id.toLowerCase().startsWith(id.toLowerCase())
-      ) ?? false;
+      const matchesId = ids?.some((id) => c.Id.toLowerCase().startsWith(id.toLowerCase())) ?? false;
 
       return matchesName || matchesId;
     });
@@ -114,7 +134,10 @@ export class StartContainersTool extends BaseTool {
 
       const docker = this.client.getDocker();
 
-      const allStopped = await docker.listContainers({ all: true, filters: JSON.stringify({ status: ["exited", "created", "paused"] }) });
+      const allStopped = await docker.listContainers({
+        all: true,
+        filters: JSON.stringify({ status: ["exited", "created", "paused"] }),
+      });
 
       const excluded = new Set((input.exclude ?? []).map((e) => e.toLowerCase()));
 
@@ -122,9 +145,10 @@ export class StartContainersTool extends BaseTool {
 
       const targetIds = new Set(primaryTargets.map((c) => c.Id));
 
-      const dependencies = (input.startDependencies ?? false)
-        ? this.#resolveDependencies(allStopped, primaryTargets, targetIds, excluded)
-        : [];
+      const dependencies =
+        (input.startDependencies ?? false)
+          ? this.#resolveDependencies(allStopped, primaryTargets, targetIds, excluded)
+          : [];
 
       const dependencyIds = new Set(dependencies.map((d) => d.Id));
 
@@ -154,7 +178,7 @@ export class StartContainersTool extends BaseTool {
           return r.success
             ? { id, name, dependency, started: true }
             : { id, name, dependency, started: false, error: r.error };
-        })
+        }),
       );
 
       if (input.summarized ?? true) return { success: true };
@@ -185,7 +209,7 @@ export class StartContainersTool extends BaseTool {
           "Use dryRun=true to preview what would be started without taking action.",
         inputSchema: schema.shape,
       },
-      this.#handle.bind(this)
+      this.#handle.bind(this),
     );
   }
 }
