@@ -119,6 +119,8 @@ Then use `node /path/to/container-commands-mcp/dist/index.js` as the command in 
 | `start_containers` | Starts stopped containers by name or ID. Supports exclude, startDependencies, and dryRun. |
 | `delete_container` | Deletes a container by ID. Requires `confirmed=true`. Shows a preview when `confirmed=false`. Supports `force` and `removeImage`. |
 | `delete_image` | Deletes an image by ID (short, full, or tag). Requires `confirmed=true`. Shows a preview when `confirmed=false`. Supports `force`. |
+| `create_volume` | Creates a Docker volume with optional driver (local/nfs/tmpfs/overlay2), mount options, and driver-specific configuration. Returns volume name and suggested container mount path. |
+| `delete_volume` | Deletes a Docker volume by ID. Requires `confirmed=true`. Shows a preview when `confirmed=false`. Detects if volume is in use before deletion. |
 
 ## Available Prompts
 
@@ -126,6 +128,7 @@ Then use `node /path/to/container-commands-mcp/dist/index.js` as the command in 
 |--------|-------------|------------------|
 | `container_troubleshoot` | Diagnostic guide for Docker container problems | User reports container not working, not starting, port conflict, crash loop, etc. |
 | `image_cleanup` | Guide to reclaim disk space by removing dangling images | User reports low disk space or wants to clean up unused Docker images. |
+| `volume_removal` | Safe Docker volume removal workflow with risk assessment and double-confirmation for high-risk volumes (databases, app state, secrets). | User wants to remove a Docker volume safely. |
 
 ## Architecture
 
@@ -154,9 +157,12 @@ src/
       start/start.tool.ts               # tool start_containers
       delete/delete.tool.ts             # tool delete_container
       delete-image/delete-image.tool.ts # tool delete_image
+      create-volume/create-volume.tool.ts # tool create_volume
+      delete-volume/delete-volume.tool.ts # tool delete_volume
     prompts/
       container-troubleshoot/           # prompt container_troubleshoot
       image-cleanup/                    # prompt image_cleanup
+      volume-removal/                   # prompt volume_removal
 ```
 
 ## Adding a New Tool

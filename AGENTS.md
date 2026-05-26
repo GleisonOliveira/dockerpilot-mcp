@@ -33,9 +33,12 @@ src/
       start/start.tool.ts               # tool start_containers
       delete/delete.tool.ts             # tool delete_container
       delete-image/delete-image.tool.ts # tool delete_image
+      create-volume/create-volume.tool.ts # tool create_volume
+      delete-volume/delete-volume.tool.ts # tool delete_volume
     prompts/
       container-troubleshoot/           # prompt container_troubleshoot
       image-cleanup/                    # prompt image_cleanup
+      volume-removal/                   # prompt volume_removal
 ```
 
 ## Como Adicionar Nova Tool
@@ -79,6 +82,8 @@ Padrão obrigatório:
 | `start_containers` | Inicia containers parados por nome ou ID. Suporta exclude, startDependencies e dryRun. |
 | `delete_container` | Remove container por ID. Requer `confirmed=true`. Exibe preview quando `confirmed=false`. Suporta `force` e `removeImage`. |
 | `delete_image` | Remove imagem por ID (curto, completo ou tag). Requer `confirmed=true`. Exibe preview quando `confirmed=false`. Suporta `force`. |
+| `create_volume` | Cria volume Docker com driver opcional (local/nfs/tmpfs/overlay2), opções de mount e configuração específica do driver. Retorna nome do volume e caminho sugerido para mount no container. |
+| `delete_volume` | Remove volume Docker por ID. Requer `confirmed=true`. Exibe preview quando `confirmed=false`. Detecta se o volume está em uso antes de remover. |
 
 ## Prompts Disponíveis
 
@@ -86,6 +91,7 @@ Padrão obrigatório:
 |--------|-----------|---------------|
 | `container_troubleshoot` | Guia de diagnóstico para problemas com containers | Usuário reporta container com erro, não iniciando, porta ocupada, crash loop, etc. |
 | `image_cleanup` | Guia para liberar espaço em disco removendo imagens dangling | Usuário reporta pouco espaço em disco ou quer limpar imagens Docker não utilizadas. |
+| `volume_removal` | Workflow seguro de remoção de volume Docker com avaliação de risco e dupla confirmação para volumes de alto risco (bancos de dados, estado de aplicação, secrets). | Usuário quer remover um volume Docker com segurança. |
 
 ## Requisitos
 
