@@ -19,7 +19,7 @@ export class ContainerTroubleshootPrompt extends BasePrompt {
           "not starting, throwing errors, port conflicts, or any unexpected behavior.",
         argsSchema: schema.shape,
       },
-      (args) => ({ messages: buildContainerTroubleshootMessages(args) })
+      (args) => ({ messages: buildContainerTroubleshootMessages(args) }),
     );
   }
 }

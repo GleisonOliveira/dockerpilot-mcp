@@ -74,7 +74,8 @@ describe("DockerPilotServer", () => {
 
   it("prompts config contains ContainerTroubleshootPrompt", async () => {
     const { promptClasses } = await import("../src/prompts.config.js");
-    const { ContainerTroubleshootPrompt } = await import("../src/docker/prompts/container-troubleshoot/container-troubleshoot.prompt.js");
+    const { ContainerTroubleshootPrompt } =
+      await import("../src/docker/prompts/container-troubleshoot/container-troubleshoot.prompt.js");
 
     expect(promptClasses).toContain(ContainerTroubleshootPrompt);
   });

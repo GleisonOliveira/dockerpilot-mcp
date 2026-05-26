@@ -9,7 +9,7 @@ const mockClient = {} as DockerClient;
 function makeMockToolClass(name: string): ToolConstructor {
   return class extends BaseTool {
     public readonly name = name;
-    register(_server: McpServer): void { }
+    register(_server: McpServer): void {}
   };
 }
 
@@ -33,7 +33,7 @@ describe("ToolContainer", () => {
         super();
         receivedClients.push(client);
       }
-      register(_server: McpServer): void { }
+      register(_server: McpServer): void {}
     }
 
     new ToolContainer({ toolClasses: [SpyTool, SpyTool], client: mockClient });

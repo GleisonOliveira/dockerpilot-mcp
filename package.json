@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "dev:watch": "tsup src/index.ts --format esm --dts --watch",
+    "prebuild": "eslint src tests --max-warnings 0 && tsc --noEmit",
     "build": "tsup src/index.ts --format esm --dts",
     "start": "node dist/index.js",
     "test": "vitest run",
@@ -28,6 +29,9 @@
     "@types/node": "^22.10.0",
     "@vitest/coverage-v8": "^2.1.8",
     "eslint": "^10.4.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "prettier": "^3.8.3",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",

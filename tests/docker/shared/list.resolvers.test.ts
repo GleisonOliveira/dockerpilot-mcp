@@ -19,9 +19,7 @@ const fakeInspect = {
     Health: {
       Status: "healthy",
       FailingStreak: 0,
-      Log: [
-        { Start: "2024-01-01T00:00:00Z", End: "2024-01-01T00:00:01Z", ExitCode: 0, Output: "OK" },
-      ],
+      Log: [{ Start: "2024-01-01T00:00:00Z", End: "2024-01-01T00:00:01Z", ExitCode: 0, Output: "OK" }],
     },
   },
   HostConfig: {
@@ -246,7 +244,10 @@ describe("ContainerFieldResolvers", () => {
     });
 
     it("returns healthcheck=null when Health absent", () => {
-      const noHealth = { ...fakeInspect, State: { ...fakeInspect.State, Health: undefined } } as unknown as Dockerode.ContainerInspectInfo;
+      const noHealth = {
+        ...fakeInspect,
+        State: { ...fakeInspect.State, Health: undefined },
+      } as unknown as Dockerode.ContainerInspectInfo;
       expect(ContainerFieldResolvers.healthcheck(noHealth)).toEqual({ healthcheck: null });
     });
   });
@@ -259,7 +260,10 @@ describe("ContainerFieldResolvers", () => {
     });
 
     it("defaults policy to 'no' when RestartPolicy absent", () => {
-      const noPolicy = { ...fakeInspect, HostConfig: { ...fakeInspect.HostConfig, RestartPolicy: undefined } } as unknown as Dockerode.ContainerInspectInfo;
+      const noPolicy = {
+        ...fakeInspect,
+        HostConfig: { ...fakeInspect.HostConfig, RestartPolicy: undefined },
+      } as unknown as Dockerode.ContainerInspectInfo;
       expect(ContainerFieldResolvers.restartInfo(noPolicy).restart_info.policy).toBe("no");
     });
   });
@@ -282,7 +286,10 @@ describe("ContainerFieldResolvers", () => {
     });
 
     it("returns null for unset memory fields", () => {
-      const noMem = { ...fakeInspect, HostConfig: { ...fakeInspect.HostConfig, Memory: 0, MemoryReservation: 0, MemorySwap: 0 } } as unknown as Dockerode.ContainerInspectInfo;
+      const noMem = {
+        ...fakeInspect,
+        HostConfig: { ...fakeInspect.HostConfig, Memory: 0, MemoryReservation: 0, MemorySwap: 0 },
+      } as unknown as Dockerode.ContainerInspectInfo;
       const result = ContainerFieldResolvers.resourceLimits(noMem);
       expect(result.resource_limits.memory_mb).toBeNull();
       expect(result.resource_limits.memory_reservation_mb).toBeNull();
@@ -309,7 +316,10 @@ describe("ContainerFieldResolvers", () => {
     });
 
     it("returns error string when State.Error is set", () => {
-      const withError = { ...fakeInspect, State: { ...fakeInspect.State, Error: "OOM" } } as unknown as Dockerode.ContainerInspectInfo;
+      const withError = {
+        ...fakeInspect,
+        State: { ...fakeInspect.State, Error: "OOM" },
+      } as unknown as Dockerode.ContainerInspectInfo;
       expect(ContainerFieldResolvers.stateDetails(withError).state_details.error).toBe("OOM");
     });
   });
@@ -346,12 +356,18 @@ describe("ContainerFieldResolvers", () => {
 
   describe("dependencyInfo", () => {
     it("parses comma-separated depends_on label", () => {
-      const c = { ...baseContainer, Labels: { "com.docker.compose.depends_on": "db, redis" } } as unknown as Dockerode.ContainerInfo;
+      const c = {
+        ...baseContainer,
+        Labels: { "com.docker.compose.depends_on": "db, redis" },
+      } as unknown as Dockerode.ContainerInfo;
       expect(ContainerFieldResolvers.dependencyInfo(c)).toEqual({ dependency_info: ["db", "redis"] });
     });
 
     it("strips condition suffix (service:condition:bool format)", () => {
-      const c = { ...baseContainer, Labels: { "com.docker.compose.depends_on": "api:service_started:false,db:service_healthy:true" } } as unknown as Dockerode.ContainerInfo;
+      const c = {
+        ...baseContainer,
+        Labels: { "com.docker.compose.depends_on": "api:service_started:false,db:service_healthy:true" },
+      } as unknown as Dockerode.ContainerInfo;
       expect(ContainerFieldResolvers.dependencyInfo(c)).toEqual({ dependency_info: ["api", "db"] });
     });
 

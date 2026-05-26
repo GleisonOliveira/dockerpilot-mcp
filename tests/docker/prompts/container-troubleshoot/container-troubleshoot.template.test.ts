@@ -34,7 +34,10 @@ describe("buildContainerTroubleshootMessages", () => {
   });
 
   it("returns non-empty texts with all args", () => {
-    const [user, assistant] = buildContainerTroubleshootMessages({ container_name: "my-container", symptom: "keeps crashing" });
+    const [user, assistant] = buildContainerTroubleshootMessages({
+      container_name: "my-container",
+      symptom: "keeps crashing",
+    });
     expect(user.content.text.trim()).not.toBe("");
     expect(assistant.content.text.trim()).not.toBe("");
   });

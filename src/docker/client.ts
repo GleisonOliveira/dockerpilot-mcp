@@ -7,9 +7,7 @@ export class DockerClient {
 
   constructor() {
     this.docker = new Dockerode(
-      isWindows
-        ? { socketPath: "//./pipe/docker_engine" }
-        : { socketPath: "/var/run/docker.sock" }
+      isWindows ? { socketPath: "//./pipe/docker_engine" } : { socketPath: "/var/run/docker.sock" },
     );
   }
 
@@ -21,7 +19,7 @@ export class DockerClient {
         "Docker is not running or socket is not accessible. " +
           (isWindows
             ? "Ensure Docker Desktop is running."
-            : "Ensure Docker daemon is running and /var/run/docker.sock is accessible.")
+            : "Ensure Docker daemon is running and /var/run/docker.sock is accessible."),
       );
     }
   }
