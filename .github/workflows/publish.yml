@@ -19,7 +19,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 22.14.0
           package-manager-cache: false
           registry-url: https://registry.npmjs.org
 
@@ -31,6 +31,6 @@ jobs:
 
       - name: Set version from tag
         run: npm version $(echo $GITHUB_REF_NAME | sed 's/^v//') --no-git-tag-version
-        
+
       - name: Publish
         run: npm publish --access public --provenance
