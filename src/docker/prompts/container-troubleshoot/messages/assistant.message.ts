@@ -5,6 +5,24 @@ I'll help you identify and resolve the issue with ${containerRef}. Follow the st
 
 ---
 
+## 0. Verify Docker is running
+
+Before anything else, confirm the Docker daemon is reachable:
+
+\`\`\`
+tool: docker_status
+args: {}
+\`\`\`
+
+**If the call fails or returns \`status: "unavailable"\`:**
+- Docker daemon is not running or the socket is not accessible
+- Ask the user to start Docker (e.g. open Docker Desktop, or run \`sudo systemctl start docker\`)
+- **Do not proceed to the next steps until Docker is confirmed running**
+
+If Docker is running, the response will include \`status: "running"\` along with engine version, container counts, and resource usage — useful context for the rest of the diagnosis.
+
+---
+
 ## 1. Check current container state
 
 First, list all containers (including stopped ones) to get a full overview:
@@ -40,6 +58,12 @@ To filter by name, also pass \`name: "${nameArg}"\`.
 
 > Use \`includePorts: true\` to see port mappings for all containers.
 > Compare with other running containers to identify the conflict.
+
+### No exposed ports — container not reachable externally
+- If the container has no port mappings (empty \`ports\` in the response), it **cannot be accessed from outside the Docker network or from the host machine**
+- This is intentional for internal-only services, but may be the root cause if the user is trying to reach the container from a browser, external client, or another host
+- To expose a port, the container must be recreated with the desired mapping (e.g. \`-p 8080:80\`)
+- Use \`create_container\` with the \`ports\` parameter to recreate it with the correct bindings
 
 ### Network / communication problem
 - Container cannot reach another service despite both running
@@ -118,7 +142,14 @@ If unresponsive, force the stop:
 
 ## 4. Read container logs
 
-> ⚠️ The log reading tool will be added to the project in the future. When available (\`get_container_logs\`), use it to inspect application output and identify internal errors — it is the most direct source for diagnosing crashes and startup failures.
+Use \`container_logs\` to inspect application output and identify internal errors — it is the most direct source for diagnosing crashes and startup failures.
+
+To fetch the last 20 lines of logs, you need the container ID (not the name). Get it from \`list_containers\` first, then:
+\`\`\`
+container_logs → id: "<container-id>", tail: 20
+\`\`\`
+
+Increase \`tail\` if the relevant error occurred earlier in the output.
 
 ---
 
