@@ -87,6 +87,13 @@ describe("DeleteContainerTool", () => {
       expect(result.content[0].text).toMatch(/No container found/);
     });
 
+    it("uses id as name in preview when Names is empty", async () => {
+      mockListContainers.mockResolvedValue([{ ...makeContainer("aaa111bbb222ccc333", "web"), Names: [] }]);
+      const result = (await capturedCallback({ id: "aaa111", confirmed: false })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.preview.name).toBe("aaa111bbb222");
+    });
+
     it("preview reflects force and removeImage flags", async () => {
       mockListContainers.mockResolvedValue([makeContainer("aaa111bbb222ccc333", "web")]);
 
@@ -158,6 +165,13 @@ describe("DeleteContainerTool", () => {
       expect(parsed.deleted).toBe(true);
       expect(parsed.imageRemoved).toBe(false);
       expect(parsed.imageError).toMatch(/image in use/);
+    });
+
+    it("uses id as name when Names is empty", async () => {
+      mockListContainers.mockResolvedValue([{ ...makeContainer("aaa111bbb222ccc333", "web"), Names: [] }]);
+      const result = (await capturedCallback({ id: "aaa111", confirmed: true })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.name).toBe("aaa111bbb222");
     });
 
     it("does not include image fields when removeImage is not set", async () => {

@@ -117,6 +117,13 @@ describe("RestartContainerTool", () => {
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.restarted).toBe(true);
     });
+
+    it("uses id as name when Names is empty", async () => {
+      mockListContainers.mockResolvedValue([{ ...fakeContainer, Names: [] }]);
+      const result = (await capturedCallback({ id: "abc123" })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.container.name).toBe("abc123def456");
+    });
   });
 
   describe("not found", () => {

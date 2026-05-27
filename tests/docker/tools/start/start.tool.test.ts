@@ -96,6 +96,13 @@ describe("StartContainersTool", () => {
       expect(parsed.wouldStart).toHaveLength(1);
       expect(parsed.wouldStart[0].name).toBe("web");
     });
+
+    it("uses id as name in dryRun when Names is empty", async () => {
+      mockListContainers.mockResolvedValue([{ ...makeContainer("aaa111bbb222ccc333", "web"), Names: [] }]);
+      const result = (await capturedCallback({ dryRun: true })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.wouldStart[0].name).toBe("aaa111bbb222");
+    });
   });
 
   describe("dryRun=false (default)", () => {
