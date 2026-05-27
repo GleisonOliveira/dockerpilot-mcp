@@ -566,4 +566,105 @@ describe("StartContainersTool", () => {
       expect(parsed.results[0].name).toBe("aaa111bbb222");
     });
   });
+
+  describe("startDependencies edge cases", () => {
+    it("skips dependency resolution for containers without Labels", async () => {
+      const noLabels = {
+        ...makeContainer("aaa111bbb222ccc333", "web"),
+        Labels: undefined as unknown as Record<string, string>,
+      };
+      mockListContainers.mockResolvedValue([noLabels]);
+
+      const result = (await capturedCallback({
+        dryRun: false,
+        summarized: false,
+        names: ["web"],
+        startDependencies: true,
+      })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(parsed.results).toHaveLength(1);
+      expect(parsed.results[0].name).toBe("web");
+    });
+
+    it("skips container as dependency when cProject is empty", async () => {
+      const noProject = makeContainer("dep111111111111111", "db", {
+        "com.docker.compose.service": "db",
+      });
+      const web = makeComposeContainer("web000000000000000", "web", "myapp", ["db"]);
+      mockListContainers.mockResolvedValue([noProject, web]);
+
+      const result = (await capturedCallback({
+        dryRun: false,
+        summarized: false,
+        names: ["web"],
+        startDependencies: true,
+      })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+
+      const names = parsed.results.map((r: { name: string }) => r.name);
+      expect(names).not.toContain("db");
+    });
+
+    it("skips dependency when depends_on label is present but empty", async () => {
+      const db = makeComposeContainer("db0000000000000000", "db", "myapp");
+      const web = makeContainer("web000000000000000", "web", {
+        "com.docker.compose.project": "myapp",
+        "com.docker.compose.service": "web",
+        "com.docker.compose.depends_on": "",
+      });
+      mockListContainers.mockResolvedValue([db, web]);
+
+      const result = (await capturedCallback({
+        dryRun: false,
+        summarized: false,
+        names: ["web"],
+        startDependencies: true,
+      })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(parsed.results).toHaveLength(1);
+      expect(parsed.results[0].name).toBe("web");
+    });
+
+    it("skips dependency when frontier (target) container has no Labels", async () => {
+      const noLabels = {
+        ...makeContainer("web000000000000000", "web"),
+        Labels: undefined as unknown as Record<string, string>,
+      };
+      const db = makeComposeContainer("db0000000000000000", "db", "myapp");
+      mockListContainers.mockResolvedValue([noLabels, db]);
+
+      const result = (await capturedCallback({
+        dryRun: false,
+        summarized: false,
+        names: ["web"],
+        startDependencies: true,
+      })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+
+      const names = parsed.results.map((r: { name: string }) => r.name);
+      expect(names).toContain("web");
+      expect(names).not.toContain("db");
+    });
+
+    it("skips dependency when frontier container project differs from candidate project", async () => {
+      const db = makeComposeContainer("db0000000000000000", "db", "project-x");
+      const web = makeComposeContainer("web000000000000000", "web", "project-y", ["db"]);
+      const extra = makeComposeContainer("ext000000000000000", "extra", "project-z");
+      mockListContainers.mockResolvedValue([db, web, extra]);
+
+      const result = (await capturedCallback({
+        dryRun: false,
+        summarized: false,
+        names: ["web"],
+        startDependencies: true,
+      })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+
+      const names = parsed.results.map((r: { name: string }) => r.name);
+      expect(names).not.toContain("extra");
+      expect(names).not.toContain("db");
+    });
+  });
 });

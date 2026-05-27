@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { DockerPilotServer } from "../src/server.js";
+
+vi.mock("@modelcontextprotocol/sdk/server/stdio.js", () => ({
+  StdioServerTransport: vi.fn().mockImplementation(() => ({})),
+}));
 import { ToolContainer } from "../src/di/tool-container.js";
 import { PromptContainer } from "../src/di/prompt-container.js";
 import { BaseTool } from "../src/docker/shared/base.tool.js";
@@ -78,5 +82,20 @@ describe("DockerPilotServer", () => {
       await import("../src/docker/prompts/container-troubleshoot/container-troubleshoot.prompt.js");
 
     expect(promptClasses).toContain(ContainerTroubleshootPrompt);
+  });
+
+  it("start connects server via StdioServerTransport", async () => {
+    const { StdioServerTransport } = await import("@modelcontextprotocol/sdk/server/stdio.js");
+    const connectMock = vi.fn().mockResolvedValue(undefined);
+
+    const server = new DockerPilotServer(makeToolContainer([]), makePromptContainer([]));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (server as any).server.connect = connectMock;
+
+    await server.start();
+
+    expect(StdioServerTransport).toHaveBeenCalledOnce();
+    expect(connectMock).toHaveBeenCalledOnce();
+    expect(connectMock).toHaveBeenCalledWith(expect.any(Object));
   });
 });

@@ -138,6 +138,29 @@ describe("ContainerLogsTool", () => {
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.logs).toEqual(["hello", "world"]);
     });
+
+    it("handles stream returned as string (non-Buffer)", async () => {
+      const frame = makeLogBuffer(["from-string\n"]);
+      mockLogs.mockResolvedValue(frame.toString("binary") as unknown as Buffer);
+      const result = (await capturedCallback({ id: "abc123" })) as {
+        content: { text: string }[];
+        isError?: boolean;
+      };
+      expect(result.isError).toBeUndefined();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(Array.isArray(parsed.logs)).toBe(true);
+    });
+
+    it("falls back to raw utf8 when stream has no valid mux frames", async () => {
+      mockLogs.mockResolvedValue(Buffer.from("plain log line\n") as unknown as Buffer);
+      const result = (await capturedCallback({ id: "abc123" })) as {
+        content: { text: string }[];
+        isError?: boolean;
+      };
+      expect(result.isError).toBeUndefined();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.logs).toContain("plain log line");
+    });
   });
 
   describe("not found", () => {

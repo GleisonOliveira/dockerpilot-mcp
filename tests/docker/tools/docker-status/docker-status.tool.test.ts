@@ -288,5 +288,45 @@ describe("DockerStatusTool", () => {
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.warnings).toEqual([]);
     });
+
+    it("handles images with undefined Size in total_size_bytes", async () => {
+      mockDf.mockResolvedValue({
+        ...fakeDf,
+        Images: [{ Size: undefined, ReclaimableSize: 0, Containers: 1 }],
+      });
+      const result = (await capturedCallback()) as { content: { text: string }[] };
+      const { disk_usage } = JSON.parse(result.content[0].text);
+      expect(disk_usage.images.total_size_bytes).toBe(0);
+    });
+
+    it("skips reclaimable when image Containers is not 0", async () => {
+      mockDf.mockResolvedValue({
+        ...fakeDf,
+        Images: [{ Size: 100, ReclaimableSize: 999, Containers: 2 }],
+      });
+      const result = (await capturedCallback()) as { content: { text: string }[] };
+      const { disk_usage } = JSON.parse(result.content[0].text);
+      expect(disk_usage.images.reclaimable_bytes).toBe(0);
+    });
+
+    it("handles volumes with undefined UsageData in total_size_bytes", async () => {
+      mockDf.mockResolvedValue({
+        ...fakeDf,
+        Volumes: [{ UsageData: undefined }, { UsageData: { Size: undefined } }],
+      });
+      const result = (await capturedCallback()) as { content: { text: string }[] };
+      const { disk_usage } = JSON.parse(result.content[0].text);
+      expect(disk_usage.volumes.total_size_bytes).toBe(0);
+    });
+
+    it("handles build cache with undefined Size", async () => {
+      mockDf.mockResolvedValue({
+        ...fakeDf,
+        BuildCache: [{ Size: undefined }],
+      });
+      const result = (await capturedCallback()) as { content: { text: string }[] };
+      const { disk_usage } = JSON.parse(result.content[0].text);
+      expect(disk_usage.build_cache.total_size_bytes).toBe(0);
+    });
   });
 });

@@ -196,5 +196,14 @@ describe("DeleteImageTool", () => {
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.tags).toEqual([]);
     });
+
+    it("finds image by tag prefix", async () => {
+      mockListImages.mockResolvedValue([makeImage("abc123def456", ["nginx:1.25.0"])]);
+      const result = (await capturedCallback({ id: "nginx:1.25", confirmed: false })) as {
+        content: { text: string }[];
+      };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.confirmed).toBe(false);
+    });
   });
 });
