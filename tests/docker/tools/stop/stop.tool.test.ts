@@ -635,4 +635,68 @@ describe("StopContainersTool", () => {
       expect(result.content[0].text).toContain("socket hang up");
     });
   });
+
+  describe("stopDependents edge cases", () => {
+    it("skips dependent resolution for containers without Labels", async () => {
+      const noLabels = {
+        ...makeContainer("aaa111bbb222ccc333", "web"),
+        Labels: undefined as unknown as Record<string, string>,
+      };
+      mockListContainers.mockResolvedValue([noLabels]);
+
+      const result = (await capturedCallback({
+        dryRun: false,
+        summarized: false,
+        names: ["web"],
+        stopDependents: true,
+      })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(parsed.results).toHaveLength(1);
+      expect(parsed.results[0].name).toBe("web");
+    });
+
+    it("skips container as dependent when depends_on label is present but empty", async () => {
+      const web = makeContainer("web000000000000000", "web", {
+        "com.docker.compose.project": "myapp",
+        "com.docker.compose.service": "web",
+        "com.docker.compose.depends_on": "",
+      });
+      const db = makeComposeContainer("db0000000000000000", "db", "myapp");
+      mockListContainers.mockResolvedValue([db, web]);
+
+      const result = (await capturedCallback({
+        dryRun: false,
+        summarized: false,
+        names: ["db"],
+        stopDependents: true,
+      })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+
+      const names = parsed.results.map((r: { name: string }) => r.name);
+      expect(names).not.toContain("web");
+    });
+
+    it("handles frontier container without Labels when resolving transitive dependents", async () => {
+      const db = makeComposeContainer("db0000000000000000", "db", "myapp");
+      const web = makeComposeContainer("web000000000000000", "web", "myapp", ["db"]);
+      const noLabels = {
+        ...makeContainer("ext000000000000000", "ext"),
+        Labels: undefined as unknown as Record<string, string>,
+      };
+      mockListContainers.mockResolvedValue([db, web, noLabels]);
+
+      const result = (await capturedCallback({
+        dryRun: false,
+        summarized: false,
+        names: ["db"],
+        stopDependents: true,
+      })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+
+      const names = parsed.results.map((r: { name: string }) => r.name);
+      expect(names).toContain("web");
+      expect(names).not.toContain("ext");
+    });
+  });
 });

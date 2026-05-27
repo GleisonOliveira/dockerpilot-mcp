@@ -49,6 +49,7 @@ type CallbackInput = {
   tmpfsSize?: string;
   tmpfsMode?: string;
   labels?: Record<string, string>;
+  containerPath?: string;
 };
 
 describe("CreateVolumeTool", () => {
@@ -284,6 +285,15 @@ describe("CreateVolumeTool", () => {
       await capturedCallback({ containerId: "abc123" });
 
       expect(mockListContainers).toHaveBeenCalledWith({ all: true });
+    });
+
+    it("uses shortId as container name fallback when Names is empty", async () => {
+      mockListContainers.mockResolvedValue([
+        { Id: "abc123def456ghi7", Names: [], State: "running", Image: "nginx:latest" },
+      ]);
+      const result = (await capturedCallback({ containerId: "abc123" })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.container.name).toBe("abc123def456");
     });
   });
 

@@ -490,6 +490,33 @@ describe("CreateContainerTool", () => {
 
       expect(parsed.container.networks).toEqual(expect.arrayContaining(["my-net", "bridge"]));
     });
+
+    it("falls back to empty object when PortBindings is null", async () => {
+      mockInspect.mockResolvedValue(
+        makeInspectResponse({ HostConfig: { PortBindings: null, RestartPolicy: { Name: "no" } } }),
+      );
+      const result = (await capturedCallback({ image: "nginx:latest" })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.container.ports).toEqual({});
+    });
+
+    it("falls back to empty array when Networks is null", async () => {
+      mockInspect.mockResolvedValue(
+        makeInspectResponse({ NetworkSettings: { Networks: null as unknown as Record<string, object> } }),
+      );
+      const result = (await capturedCallback({ image: "nginx:latest" })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.container.networks).toEqual([]);
+    });
+
+    it("falls back to 'no' when RestartPolicy Name is undefined", async () => {
+      mockInspect.mockResolvedValue(
+        makeInspectResponse({ HostConfig: { PortBindings: {}, RestartPolicy: undefined } }),
+      );
+      const result = (await capturedCallback({ image: "nginx:latest" })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.container.restartPolicy).toBe("no");
+    });
   });
 
   describe("errors", () => {
