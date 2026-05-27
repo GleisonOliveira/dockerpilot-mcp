@@ -1,5 +1,9 @@
 # DockerPilot MCP
 
+[![npm version](https://img.shields.io/npm/v/dockerpilot-mcp)](https://www.npmjs.com/package/dockerpilot-mcp)
+[![node version](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](https://nodejs.org)
+[![publish](https://github.com/GleisonOliveira/dockerpilot-mcp/actions/workflows/publish.yml/badge.svg)](https://github.com/GleisonOliveira/dockerpilot-mcp/actions/workflows/publish.yml)
+
 TypeScript MCP server that exposes Docker commands as tools and prompts for AI agents.
 
 Allows AI agents to interact with Docker containers via the MCP protocol — no direct shell access needed.
@@ -286,3 +290,8 @@ npx @modelcontextprotocol/inspector node dist/index.js
 ```
 
 </details>
+
+## Credits
+
+- [Dockerode](https://github.com/apocas/dockerode) — Node.js Docker API client used under the hood to communicate with the Docker daemon
+- [MCP SDK](https://github.com/modelcontextprotocol/typescript-sdk) — official TypeScript SDK for the Model Context Protocol
