@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { dockerClient } from "./docker/client.js";
 import { ToolContainer } from "./di/tool-container.js";
 import { PromptContainer } from "./di/prompt-container.js";

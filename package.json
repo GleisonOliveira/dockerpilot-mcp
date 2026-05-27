@@ -4,6 +4,9 @@
   "description": "MCP server for Docker container management",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "dockerpilot-mcp": "dist/index.js"
+  },
   "author": {
     "name": "Gleison Oliveira"
   },
