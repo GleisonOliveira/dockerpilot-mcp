@@ -1,36 +1,37 @@
 export function buildAssistantMessage(): string {
   return `# Docker Image Cleanup Guide
 
-I'll help you reclaim disk space by identifying and removing unused (dangling) Docker images. Follow the steps below.
+I'll help you reclaim disk space by removing all unused (dangling) Docker images. Follow the steps below.
 
 ---
 
-## 1. List dangling images
+## 1. Preview dangling images
 
-Dangling images are untagged layers no longer referenced by any container. Start by listing them along with their container usage:
+Start by calling \`prune_images\` with \`confirmed: false\` to see what will be removed without deleting anything:
 
 \`\`\`
-tool: list_images
-args: { dangling: true, includeContainers: true }
+tool: prune_images
+args: { confirmed: false }
 \`\`\`
 
-For each image returned, note:
-- **id** — short image ID
-- **tags** — usually empty for dangling images
-- **size_mb** — disk space consumed by this image
-- **running_containers** — containers currently using it
+The response includes:
+- **count** — number of dangling images found
+- **total_size_mb** — combined disk space that will be freed
+- **images** — list of each image with \`id\`, \`size_mb\`, and \`created\`
 
 ---
 
 ## 2. Show the user what was found
 
-Present each dangling image clearly:
+Present the preview clearly:
 
-| ID | Tags | Size | Containers |
-|----|------|------|------------|
-| \`<id>\` | \`<tags or none>\` | \`<size_mb> MB\` | \`<container names or none>\` |
+| ID | Size | Created |
+|----|------|---------|
+| \`<id>\` | \`<size_mb> MB\` | \`<created>\` |
 
-Then show the **total size** of all dangling images combined (sum of \`size_mb\` for every image in the list).
+Then show the **total**: "X dangling image(s) found, approximately Y MB will be freed."
+
+If \`count\` is 0, inform the user there are no dangling images to remove.
 
 ---
 
@@ -39,39 +40,37 @@ Then show the **total size** of all dangling images combined (sum of \`size_mb\`
 **Do not delete anything yet.** Ask the user explicitly:
 
 > "Would you like to remove all X dangling image(s) listed above, freeing approximately Y MB?
-> Type **yes** to confirm, or tell me which images to skip."
+> Type **yes** to confirm."
 
-Only proceed to deletion after the user gives explicit authorization.
+Only proceed after the user gives explicit authorization.
 
 ---
 
-## 4. Delete authorized images
+## 4. Delete all dangling images
 
-For each image the user authorized, call \`delete_image\` with \`force: true\` and \`confirmed: true\`.
-Process them one by one:
+Call \`prune_images\` with \`confirmed: true\`:
 
 \`\`\`
-tool: delete_image
-args: { id: "<image_id>", force: true, confirmed: true }
+tool: prune_images
+args: { confirmed: true }
 \`\`\`
 
-If the user asked to skip specific images, omit those from the deletion loop.
+Use \`force: true\` only if the user explicitly requests removal of images still referenced by stopped containers.
 
 ---
 
 ## 5. Report recovered space
 
-After all deletions complete, sum the \`size_mb\` of **only the successfully deleted images** and report:
+After deletion completes, report using the response fields:
 
-> "Done. Removed X image(s) and recovered approximately Y MB of disk space."
+> "Done. Removed \`count\` image(s) and recovered approximately \`total_freed_mb\` MB of disk space."
 
-If any deletion failed, list the failed image IDs and their errors separately.
+If \`failed_count\` is greater than 0, list the errors from the \`errors\` field separately.
 
 ---
 
 ## Notes
 
-- Dangling images are safe to remove — they are not tagged and not used by running containers.
-- \`force: true\` is required to remove images still referenced by stopped (non-running) containers.
-- If \`running_containers\` is non-empty for an image, warn the user before including it — those containers would be affected.`;
+- Dangling images are safe to remove — they are untagged and not referenced by any container.
+- \`force: true\` removes images still referenced by stopped containers; ask the user before using it.`;
 }

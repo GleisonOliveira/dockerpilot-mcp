@@ -14,6 +14,7 @@ import { PullImageTool } from "./docker/tools/pull-image/pull-image.tool.js";
 import { RestartContainerTool } from "./docker/tools/restart/restart.tool.js";
 import { ExecCommandTool } from "./docker/tools/exec-command/exec-command.tool.js";
 import { ContainerLogsTool } from "./docker/tools/container-logs/container-logs.tool.js";
+import { PruneImagesTool } from "./docker/tools/prune-images/prune-images.tool.js";
 
 export const toolClasses: ToolConstructor[] = [
   ListContainersTool,
@@ -31,4 +32,5 @@ export const toolClasses: ToolConstructor[] = [
   RestartContainerTool,
   ExecCommandTool,
   ContainerLogsTool,
+  PruneImagesTool,
 ];

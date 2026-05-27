@@ -163,6 +163,7 @@ Then use `node /path/to/container-commands-mcp/dist/index.js` as the command in 
 | `docker_status` | Returns Docker daemon health and system information: engine version, container counts, disk usage (images, volumes, build cache), plugins, Swarm state, and daemon warnings. No parameters required. |
 | `exec_command` | Executes a command inside a running Docker container. Accepts container ID (full or prefix) — names are NOT accepted. Returns stdout/stderr output and the command exit code. |
 | `container_logs` | Fetches the last N log lines from a Docker container. Accepts container ID (full or prefix) — names are NOT accepted. Returns stdout and stderr combined. Defaults to last 5 lines. |
+| `prune_images` | Deletes all dangling Docker images (untagged, unreferenced). Requires `confirmed=true`. Shows a preview with count and total size when `confirmed=false`. |
 
 ## Available Prompts
 
@@ -207,6 +208,7 @@ src/
       docker-status/docker-status.tool.ts # tool docker_status
       exec-command/exec-command.tool.ts   # tool exec_command
       container-logs/container-logs.tool.ts # tool container_logs
+      prune-images/prune-images.tool.ts     # tool prune_images
     prompts/
       container-troubleshoot/           # prompt container_troubleshoot
       image-cleanup/                    # prompt image_cleanup
