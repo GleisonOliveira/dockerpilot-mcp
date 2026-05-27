@@ -23,6 +23,9 @@ jobs:
           package-manager-cache: false
           registry-url: https://registry.npmjs.org
 
+      - name: Upgrade npm to latest (required for trusted publishing >=11.5.1)
+        run: npm install -g npm@latest
+        
       - name: Set version from tag
         run: |
           VERSION=$(echo $GITHUB_REF_NAME | sed 's/^v//')
