@@ -556,4 +556,14 @@ describe("StartContainersTool", () => {
       expect(result.content[0].text).toContain("socket hang up");
     });
   });
+
+  describe("Names fallback", () => {
+    it("uses id as name in actual start when Names is empty", async () => {
+      mockListContainers.mockResolvedValue([{ ...makeContainer("aaa111bbb222ccc333", "web"), Names: [] }]);
+
+      const result = (await capturedCallback({ dryRun: false, summarized: false })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.results[0].name).toBe("aaa111bbb222");
+    });
+  });
 });

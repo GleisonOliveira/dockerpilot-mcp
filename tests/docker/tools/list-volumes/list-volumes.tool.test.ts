@@ -180,6 +180,47 @@ describe("ListVolumesTool", () => {
     });
   });
 
+  describe("includeUsage with UsageData present", () => {
+    it("includes usage data when includeUsage=true and UsageData is set", async () => {
+      mockListVolumes.mockResolvedValue({
+        Volumes: [makeVolume("data-vol", "local", { Size: 1024 * 1024, RefCount: 2 })],
+        Warnings: [],
+      });
+
+      const result = (await capturedCallback({ includeUsage: true })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed[0].usage.size_bytes).toBe(1024 * 1024);
+      expect(parsed[0].usage.ref_count).toBe(2);
+    });
+  });
+
+  describe("includeContainers with containers present", () => {
+    it("includes related containers when includeContainers=true", async () => {
+      mockListVolumes.mockResolvedValue({
+        Volumes: [makeVolume("data-vol")],
+        Warnings: [],
+      });
+      mockListContainers.mockResolvedValue([makeContainer("aaa111bbb222ccc333", "web")]);
+
+      const result = (await capturedCallback({ includeContainers: true })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed[0].containers).toHaveLength(1);
+      expect(parsed[0].containers[0].name).toBe("web");
+    });
+
+    it("uses id as container name when Names is empty", async () => {
+      mockListVolumes.mockResolvedValue({
+        Volumes: [makeVolume("data-vol")],
+        Warnings: [],
+      });
+      mockListContainers.mockResolvedValue([{ ...makeContainer("aaa111bbb222ccc333", "web"), Names: [] }]);
+
+      const result = (await capturedCallback({ includeContainers: true })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed[0].containers[0].name).toBe("aaa111bbb222");
+    });
+  });
+
   describe("errors", () => {
     it("returns isError when listVolumes throws", async () => {
       mockListVolumes.mockRejectedValue(new Error("daemon error"));

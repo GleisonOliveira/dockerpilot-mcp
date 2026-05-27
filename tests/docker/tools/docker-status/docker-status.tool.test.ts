@@ -71,6 +71,7 @@ describe("DockerStatusTool", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCheckConnection.mockResolvedValue(undefined);
     mockInfo.mockResolvedValue(fakeInfo);
     mockVersion.mockResolvedValue(fakeVersion);
     mockDf.mockResolvedValue(fakeDf);
@@ -245,6 +246,47 @@ describe("DockerStatusTool", () => {
 
       tool.register(fakeServer);
       expect(registeredConfig.inputSchema).toEqual({});
+    });
+  });
+
+  describe("null/undefined df and info fields", () => {
+    it("handles undefined df fields gracefully", async () => {
+      mockDf.mockResolvedValue({ Images: undefined, Volumes: undefined, BuildCache: undefined });
+      const result = (await capturedCallback()) as { content: { text: string }[]; isError?: boolean };
+      expect(result.isError).toBeUndefined();
+      const { disk_usage } = JSON.parse(result.content[0].text);
+      expect(disk_usage.images.count).toBe(0);
+      expect(disk_usage.images.total_size_bytes).toBe(0);
+      expect(disk_usage.images.reclaimable_bytes).toBe(0);
+      expect(disk_usage.volumes.count).toBe(0);
+      expect(disk_usage.volumes.total_size_bytes).toBe(0);
+      expect(disk_usage.build_cache.count).toBe(0);
+      expect(disk_usage.build_cache.total_size_bytes).toBe(0);
+    });
+
+    it("uses empty arrays when Plugins fields are undefined", async () => {
+      mockInfo.mockResolvedValue({ ...fakeInfo, Plugins: { Volume: undefined, Network: undefined, Log: undefined } });
+      const result = (await capturedCallback()) as { content: { text: string }[] };
+      const { plugins } = JSON.parse(result.content[0].text);
+      expect(plugins.volume).toEqual([]);
+      expect(plugins.network).toEqual([]);
+      expect(plugins.log).toEqual([]);
+    });
+
+    it("uses inactive when Swarm is undefined", async () => {
+      mockInfo.mockResolvedValue({ ...fakeInfo, Swarm: { LocalNodeState: undefined } });
+      const result = (await capturedCallback()) as { content: { text: string }[] };
+      const { swarm } = JSON.parse(result.content[0].text);
+      expect(swarm.active).toBe(false);
+      expect(swarm.state).toBe("inactive");
+    });
+
+    it("uses empty array when Warnings is undefined", async () => {
+      mockInfo.mockResolvedValue({ ...fakeInfo, Warnings: undefined });
+      const result = (await capturedCallback()) as { content: { text: string }[]; isError?: boolean };
+      expect(result.isError).toBeUndefined();
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.warnings).toEqual([]);
     });
   });
 });

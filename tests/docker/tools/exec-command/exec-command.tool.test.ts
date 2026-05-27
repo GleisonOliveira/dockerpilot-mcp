@@ -51,6 +51,7 @@ describe("ExecCommandTool", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCheckConnection.mockResolvedValue(undefined);
     mockListContainers.mockResolvedValue([fakeContainer]);
     mockExecInspect.mockResolvedValue({ ExitCode: 0 });
     mockExecStart.mockResolvedValue(makeStream("hello world\n"));
@@ -255,6 +256,56 @@ describe("ExecCommandTool", () => {
       } as unknown as McpServer;
       tool.register(fakeServer);
       expect(registeredName).toBe("exec_command");
+    });
+  });
+
+  describe("stream parsing edge cases", () => {
+    it("falls back to raw utf8 when stream has no valid multiplexed frames", async () => {
+      // Buffer smaller than 8 bytes — no valid frame header, falls back to raw.toString("utf8")
+      mockExecStart.mockResolvedValue(makeStream("hi"));
+      // Override makeStream behavior by using a stream that emits raw bytes without multiplexed header
+      mockExecStart.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            const s = new Readable({ read() {} });
+            setImmediate(() => {
+              s.push(Buffer.from("hi"));
+              s.push(null);
+            });
+            resolve(s);
+          }),
+      );
+
+      const result = (await capturedCallback({ id: "abc123", command: "echo hi" })) as {
+        content: { text: string }[];
+      };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.output).toBe("hi");
+    });
+
+    it("stops parsing when frame claims more bytes than buffer has", async () => {
+      // Header claims 1000 bytes but only 4 follow — truncated, falls back to raw
+      mockExecStart.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            const header = Buffer.alloc(8);
+            header.writeUInt8(1, 0);
+            header.writeUInt32BE(1000, 4);
+            const truncated = Buffer.concat([header, Buffer.from("abcd")]);
+            const s = new Readable({ read() {} });
+            setImmediate(() => {
+              s.push(truncated);
+              s.push(null);
+            });
+            resolve(s);
+          }),
+      );
+
+      const result = (await capturedCallback({ id: "abc123", command: "echo hi" })) as {
+        content: { text: string }[];
+      };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(typeof parsed.output).toBe("string");
     });
   });
 });
