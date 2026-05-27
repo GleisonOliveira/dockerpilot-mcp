@@ -114,6 +114,19 @@ Add to `.vscode/mcp.json` (project) or user `settings.json` (global):
 </details>
 
 <details>
+<summary><strong>OpenAI Codex</strong></summary>
+
+Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.dockerpilot]
+command = "npx"
+args = ["-y", "dockerpilot-mcp@latest"]
+```
+
+</details>
+
+<details>
 <summary><strong>Local build (any client)</strong></summary>
 
 Build locally and point to the output:
