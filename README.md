@@ -3,6 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/dockerpilot-mcp)](https://www.npmjs.com/package/dockerpilot-mcp)
 [![node version](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](https://nodejs.org)
 [![publish](https://github.com/GleisonOliveira/dockerpilot-mcp/actions/workflows/publish.yml/badge.svg)](https://github.com/GleisonOliveira/dockerpilot-mcp/actions/workflows/publish.yml)
+[![Coverage](https://codecov.io/github/GleisonOliveira/dockerpilot-mcp/graph/badge.svg?token=ESJMUEIKT1)](https://codecov.io/github/GleisonOliveira/dockerpilot-mcp)
 
 TypeScript MCP server that exposes Docker commands as tools and prompts for AI agents.
 
