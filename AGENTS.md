@@ -41,6 +41,7 @@ src/
       docker-status/docker-status.tool.ts # tool docker_status
       exec-command/exec-command.tool.ts   # tool exec_command
       container-logs/container-logs.tool.ts # tool container_logs
+      prune-images/prune-images.tool.ts     # tool prune_images
     prompts/
       container-troubleshoot/           # prompt container_troubleshoot
       image-cleanup/                    # prompt image_cleanup
@@ -96,6 +97,7 @@ Padrão obrigatório:
 | `docker_status` | Retorna saúde e informações do daemon Docker: versão do engine, contadores de containers, uso de disco (imagens, volumes, build cache), plugins, estado do Swarm e avisos do daemon. Sem parâmetros. |
 | `exec_command` | Executa um comando dentro de um container Docker em execução. Aceita ID do container (completo ou prefixo) — nomes NÃO são aceitos. Retorna saída stdout/stderr e o código de saída do comando. |
 | `container_logs` | Busca as últimas N linhas de log de um container Docker. Aceita ID do container (completo ou prefixo) — nomes NÃO são aceitos. Retorna stdout e stderr combinados. Padrão: últimas 5 linhas. |
+| `prune_images` | Remove todas as imagens Docker dangling (sem tag e sem referência). Requer `confirmed=true`. Exibe preview com contagem e tamanho total quando `confirmed=false`. Suporta `force`. |
 
 ## Prompts Disponíveis
 
