@@ -159,4 +159,42 @@ describe("DeleteImageTool", () => {
       expect(result.content[0].text).toMatch(/image is being used/);
     });
   });
+
+  describe("image lookup", () => {
+    it("finds image by full id without sha256: prefix", async () => {
+      mockListImages.mockResolvedValue([makeImage("abc123def456ghi789jk")]);
+      const result = (await capturedCallback({ id: "abc123def456ghi789jk", confirmed: false })) as {
+        content: { text: string }[];
+      };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.confirmed).toBe(false);
+    });
+
+    it("finds image by full id including sha256: prefix", async () => {
+      mockListImages.mockResolvedValue([makeImage("abc123def456ghi789jk")]);
+      const result = (await capturedCallback({ id: "sha256:abc123def456ghi789jk", confirmed: false })) as {
+        content: { text: string }[];
+      };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.confirmed).toBe(false);
+    });
+
+    it("uses empty array for tags in preview when RepoTags is null", async () => {
+      mockListImages.mockResolvedValue([{ ...makeImage("abc123def456"), RepoTags: null }]);
+      const result = (await capturedCallback({ id: "abc123", confirmed: false })) as {
+        content: { text: string }[];
+      };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.preview.tags).toEqual([]);
+    });
+
+    it("uses empty array for tags in delete when RepoTags is null", async () => {
+      mockListImages.mockResolvedValue([{ ...makeImage("abc123def456"), RepoTags: null }]);
+      const result = (await capturedCallback({ id: "abc123", confirmed: true })) as {
+        content: { text: string }[];
+      };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.tags).toEqual([]);
+    });
+  });
 });
