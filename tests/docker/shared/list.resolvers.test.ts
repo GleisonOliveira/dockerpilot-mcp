@@ -201,6 +201,35 @@ describe("ContainerFieldResolvers", () => {
       expect(result.usage?.cpu_percent).toBe(40);
     });
 
+    it("defaults numCpus to 1 when online_cpus and percpu_usage both absent", async () => {
+      const statsNoCpuInfo = {
+        ...fakeStats,
+        cpu_stats: {
+          cpu_usage: { total_usage: 2_000_000_000 },
+          system_cpu_usage: 20_000_000_000,
+        },
+      };
+      const docker = makeMockDocker(() => Promise.resolve(statsNoCpuInfo));
+      const result = await ContainerFieldResolvers.usage(baseContainer, docker);
+      // cpuDelta=1e9, systemDelta=1e10, numCpus=1 → 10%
+      expect(result.usage?.cpu_percent).toBe(10);
+    });
+
+    it("uses 0 for mem cache when stats.cache absent", async () => {
+      const statsNoCache = {
+        ...fakeStats,
+        memory_stats: {
+          usage: 200 * 1024 * 1024,
+          limit: 1024 * 1024 * 1024,
+          stats: undefined,
+        },
+      };
+      const docker = makeMockDocker(() => Promise.resolve(statsNoCache));
+      const result = await ContainerFieldResolvers.usage(baseContainer, docker);
+      // 200MB - 0 cache = 200MB
+      expect(result.usage?.mem_usage_mb).toBe(200);
+    });
+
     it("returns usage=null for stopped containers without calling docker", async () => {
       const statsSpy = vi.fn();
       const docker = makeMockDocker(statsSpy);
@@ -250,6 +279,14 @@ describe("ContainerFieldResolvers", () => {
       } as unknown as Dockerode.ContainerInspectInfo;
       expect(ContainerFieldResolvers.healthcheck(noHealth)).toEqual({ healthcheck: null });
     });
+
+    it("returns last_log=null when Log is empty", () => {
+      const emptyLog = {
+        ...fakeInspect,
+        State: { ...fakeInspect.State, Health: { Status: "healthy", FailingStreak: 0, Log: [] } },
+      } as unknown as Dockerode.ContainerInspectInfo;
+      expect(ContainerFieldResolvers.healthcheck(emptyLog).healthcheck?.last_log).toBeNull();
+    });
   });
 
   describe("restartInfo", () => {
@@ -294,6 +331,26 @@ describe("ContainerFieldResolvers", () => {
       expect(result.resource_limits.memory_mb).toBeNull();
       expect(result.resource_limits.memory_reservation_mb).toBeNull();
       expect(result.resource_limits.memory_swap_mb).toBeNull();
+    });
+
+    it("returns null for unset cpu and pids fields", () => {
+      const noCpu = {
+        ...fakeInspect,
+        HostConfig: {
+          ...fakeInspect.HostConfig,
+          NanoCpus: undefined,
+          CpuShares: undefined,
+          CpuQuota: undefined,
+          CpuPeriod: undefined,
+          PidsLimit: undefined,
+        },
+      } as unknown as Dockerode.ContainerInspectInfo;
+      const result = ContainerFieldResolvers.resourceLimits(noCpu);
+      expect(result.resource_limits.nano_cpus).toBeNull();
+      expect(result.resource_limits.cpu_shares).toBeNull();
+      expect(result.resource_limits.cpu_quota).toBeNull();
+      expect(result.resource_limits.cpu_period).toBeNull();
+      expect(result.resource_limits.pids_limit).toBeNull();
     });
   });
 
@@ -352,6 +409,18 @@ describe("ContainerFieldResolvers", () => {
       const c = { ...baseContainer, Labels: {} } as unknown as Dockerode.ContainerInfo;
       expect(ContainerFieldResolvers.composeMetadata(c)).toEqual({ compose_metadata: null });
     });
+
+    it("returns null for optional compose fields when labels absent", () => {
+      const c = {
+        ...baseContainer,
+        Labels: { "com.docker.compose.project": "myproject" },
+      } as unknown as Dockerode.ContainerInfo;
+      const result = ContainerFieldResolvers.composeMetadata(c);
+      expect(result.compose_metadata?.service).toBeNull();
+      expect(result.compose_metadata?.config_files).toBeNull();
+      expect(result.compose_metadata?.working_dir).toBeNull();
+      expect(result.compose_metadata?.container_number).toBeNull();
+    });
   });
 
   describe("dependencyInfo", () => {
@@ -374,6 +443,18 @@ describe("ContainerFieldResolvers", () => {
     it("returns empty array when depends_on absent", () => {
       const c = { ...baseContainer, Labels: {} } as unknown as Dockerode.ContainerInfo;
       expect(ContainerFieldResolvers.dependencyInfo(c)).toEqual({ dependency_info: [] });
+    });
+
+    it("returns empty array when Labels is undefined", () => {
+      const c = { ...baseContainer, Labels: undefined } as unknown as Dockerode.ContainerInfo;
+      expect(ContainerFieldResolvers.dependencyInfo(c)).toEqual({ dependency_info: [] });
+    });
+  });
+
+  describe("composeMetadata Labels fallback", () => {
+    it("returns compose_metadata=null when Labels is undefined", () => {
+      const c = { ...baseContainer, Labels: undefined } as unknown as Dockerode.ContainerInfo;
+      expect(ContainerFieldResolvers.composeMetadata(c)).toEqual({ compose_metadata: null });
     });
   });
 });
