@@ -7,7 +7,7 @@ Allows AI agents to interact with Docker containers via the MCP protocol — no 
 ## Requirements
 
 - Docker running locally with socket at `/var/run/docker.sock`
-- Node.js 20+
+- Node.js 22+
 
 ## Installation
 
