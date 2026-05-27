@@ -14,10 +14,27 @@ Allows AI agents to interact with Docker containers via the MCP protocol — no 
 The recommended way is via `npx` — no installation required:
 
 ```bash
-npx dockerpilot-mcp
+npx -y dockerpilot-mcp@latest
+```
+
+To update to the latest version:
+
+```bash
+npm install -g dockerpilot-mcp@latest
 ```
 
 ## AI Client Integration
+
+<details>
+<summary><strong>Claude Code</strong></summary>
+
+Run in terminal:
+
+```bash
+claude mcp add dockerpilot -- npx -y dockerpilot-mcp@latest
+```
+
+</details>
 
 <details>
 <summary><strong>Claude Desktop</strong></summary>
@@ -29,11 +46,13 @@ Add to `claude_desktop_config.json`:
   "mcpServers": {
     "dockerpilot": {
       "command": "npx",
-      "args": ["dockerpilot-mcp"]
+      "args": ["-y", "dockerpilot-mcp@latest"]
     }
   }
 }
 ```
+
+> **Note:** After saving the config, a full computer restart may be required for Claude Desktop to detect the new MCP server.
 
 </details>
 
@@ -47,7 +66,7 @@ Add to `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global):
   "mcpServers": {
     "dockerpilot": {
       "command": "npx",
-      "args": ["dockerpilot-mcp"]
+      "args": ["-y", "dockerpilot-mcp@latest"]
     }
   }
 }
@@ -65,7 +84,7 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
   "mcpServers": {
     "dockerpilot": {
       "command": "npx",
-      "args": ["dockerpilot-mcp"]
+      "args": ["-y", "dockerpilot-mcp@latest"]
     }
   }
 }
@@ -85,7 +104,7 @@ Add to `.vscode/mcp.json` (project) or user `settings.json` (global):
       "dockerpilot": {
         "type": "stdio",
         "command": "npx",
-        "args": ["dockerpilot-mcp"]
+        "args": ["-y", "dockerpilot-mcp@latest"]
       }
     }
   }
