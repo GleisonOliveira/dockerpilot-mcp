@@ -2,7 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 import { DockerPilotServer } from "../src/server.js";
 
 vi.mock("@modelcontextprotocol/sdk/server/stdio.js", () => ({
-  StdioServerTransport: vi.fn().mockImplementation(() => ({})),
+  StdioServerTransport: vi.fn().mockImplementation(function () {
+    return {};
+  }),
 }));
 import { ToolContainer } from "../src/di/tool-container.js";
 import { PromptContainer } from "../src/di/prompt-container.js";
