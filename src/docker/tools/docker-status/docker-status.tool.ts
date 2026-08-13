@@ -87,9 +87,7 @@ export class DockerStatusTool extends BaseTool {
 
     if (!outcome.success) {
       return {
-        content: [
-          { type: "text" as const, text: JSON.stringify({ status: "unavailable", error: `${outcome.error}` }) },
-        ],
+        content: [{ type: "text" as const, text: `Error docker_status: ${outcome.error}` }],
         isError: true,
       };
     }

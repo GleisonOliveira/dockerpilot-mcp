@@ -24,9 +24,9 @@ export class DeleteImageTool extends BaseTool {
     super();
   }
 
-  #findImage(images: Awaited<ReturnType<ReturnType<DockerClient["getDocker"]>["listImages"]>>, id: string) {
+  #findImages(images: Awaited<ReturnType<ReturnType<DockerClient["getDocker"]>["listImages"]>>, id: string) {
     const search = id.toLowerCase();
-    const match = images.find((img) => {
+    return images.filter((img) => {
       const shortId = img.Id.replace("sha256:", "").slice(0, 12);
       const fullId = img.Id.replace("sha256:", "");
       const tags = img.RepoTags ?? [];
@@ -37,8 +37,6 @@ export class DeleteImageTool extends BaseTool {
         tags.some((t) => t.toLowerCase() === search || t.toLowerCase().startsWith(search))
       );
     });
-    if (!match) throw new Error(`No image found matching: ${id}`);
-    return match;
   }
 
   #buildPreview(match: ImageInfo, force: boolean) {
@@ -67,7 +65,14 @@ export class DeleteImageTool extends BaseTool {
       await this.client.checkConnection();
       const docker = this.client.getDocker();
       const images = await docker.listImages({ all: false });
-      const match = this.#findImage(images, input.id);
+      const matches = this.#findImages(images, input.id);
+
+      if (matches.length === 0) throw new Error(`No image found matching: ${input.id}`);
+      if (matches.length > 1) {
+        throw new Error(`Multiple images match "${input.id}". Use the full image ID to disambiguate before deleting.`);
+      }
+
+      const match = matches[0];
 
       if (!input.confirmed) return this.#buildPreview(match, input.force ?? false);
 

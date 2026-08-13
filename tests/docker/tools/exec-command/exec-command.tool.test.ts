@@ -138,6 +138,17 @@ describe("ExecCommandTool", () => {
       expect(mockExec).toHaveBeenCalledWith(expect.objectContaining({ Cmd: ["ls", "-la", "/app"] }));
     });
 
+    it("parses quoted and escaped command tokens via shared parser", async () => {
+      const command = 'sh -c "echo hello world" --flag=\'two words\' "escaped \\" quote"';
+      await capturedCallback({ id: "abc123", command });
+
+      expect(mockExec).toHaveBeenCalledWith(
+        expect.objectContaining({
+          Cmd: ["sh", "-c", "echo hello world", "--flag=two words", 'escaped " quote'],
+        }),
+      );
+    });
+
     it("trims whitespace from id before matching", async () => {
       const result = (await capturedCallback({ id: "  abc123  ", command: "ls" })) as {
         content: { text: string }[];

@@ -6,12 +6,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 const mockStart = vi.fn();
 const mockListContainers = vi.fn();
 const mockCheckConnection = vi.fn().mockResolvedValue(undefined);
+const startOrder: string[] = [];
 
 const mockClient = {
   checkConnection: mockCheckConnection,
   getDocker: () => ({
     listContainers: mockListContainers,
-    getContainer: (_id: string) => ({ start: mockStart }),
+    getContainer: (id: string) => {
+      startOrder.push(id);
+      return { start: mockStart };
+    },
   }),
 } as unknown as DockerClient;
 
@@ -53,6 +57,7 @@ describe("StartContainersTool", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    startOrder.length = 0;
     mockStart.mockResolvedValue(undefined);
 
     const tool = buildTool();
@@ -464,6 +469,19 @@ describe("StartContainersTool", () => {
       const names = parsed.results.map((r: { name: string }) => r.name);
       expect(names.indexOf("db")).toBeLessThan(names.indexOf("api"));
       expect(names.indexOf("api")).toBeLessThan(names.indexOf("web"));
+    });
+
+    it("invokes start on dependencies in dependency-first order via shared resolver", async () => {
+      const db = makeComposeContainer("db0000000000000000", "db", "myapp");
+      const api = makeComposeContainer("api0000000000000000", "api", "myapp", ["db"]);
+      const web = makeComposeContainer("web000000000000000", "web", "myapp", ["api"]);
+
+      mockListContainers.mockResolvedValue([db, api, web]);
+
+      await capturedCallback({ dryRun: false, summarized: false, names: ["web"], startDependencies: true });
+
+      const ids = startOrder.map((id) => id.slice(0, 12));
+      expect(ids).toEqual(["db0000000000", "api000000000", "web000000000"]);
     });
 
     it("dryRun shows recursive dependencies with correct order", async () => {

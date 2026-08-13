@@ -7,12 +7,16 @@ const mockStop = vi.fn();
 const mockKill = vi.fn();
 const mockListContainers = vi.fn();
 const mockCheckConnection = vi.fn().mockResolvedValue(undefined);
+const stopOrder: string[] = [];
 
 const mockClient = {
   checkConnection: mockCheckConnection,
   getDocker: () => ({
     listContainers: mockListContainers,
-    getContainer: (_id: string) => ({ stop: mockStop, kill: mockKill }),
+    getContainer: (id: string) => {
+      stopOrder.push(id);
+      return { stop: mockStop, kill: mockKill };
+    },
   }),
 } as unknown as DockerClient;
 
@@ -56,6 +60,7 @@ describe("StopContainersTool", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    stopOrder.length = 0;
     mockStop.mockResolvedValue(undefined);
     mockKill.mockResolvedValue(undefined);
 
@@ -142,15 +147,25 @@ describe("StopContainersTool", () => {
     });
   });
 
-  describe("dryRun=false (default is true)", () => {
-    it("dryRun is true by default — does not call stop without explicit dryRun: false", async () => {
+  describe("dryRun=false (default is false)", () => {
+    it("dryRun is false by default — executes stop without explicit dryRun: false", async () => {
       mockListContainers.mockResolvedValue([containerA]);
 
-      const result = (await capturedCallback({})) as { content: { text: string }[] };
+      const result = (await capturedCallback({ summarized: false })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
-      expect(parsed.dryRun).toBe(true);
-      expect(mockStop).not.toHaveBeenCalled();
+      expect(parsed.dryRun).toBe(false);
+      expect(mockStop).toHaveBeenCalledTimes(1);
+    });
+
+    it("dryRun=false explicitly still executes stop", async () => {
+      mockListContainers.mockResolvedValue([containerA]);
+
+      const result = (await capturedCallback({ dryRun: false, summarized: false })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(parsed.dryRun).toBe(false);
+      expect(mockStop).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -362,13 +377,24 @@ describe("StopContainersTool", () => {
   });
 
   describe("empty results", () => {
-    it("returns empty wouldStop when no running containers (dryRun default)", async () => {
+    it("returns empty wouldStop when no running containers (dryRun=true)", async () => {
       mockListContainers.mockResolvedValue([]);
 
-      const result = (await capturedCallback({})) as { content: { text: string }[] };
+      const result = (await capturedCallback({ dryRun: true })) as { content: { text: string }[] };
       const parsed = JSON.parse(result.content[0].text);
 
       expect(parsed.wouldStop).toHaveLength(0);
+      expect(mockStop).not.toHaveBeenCalled();
+    });
+
+    it("executes with no targets and returns success when no containers match (dryRun default false)", async () => {
+      mockListContainers.mockResolvedValue([]);
+
+      const result = (await capturedCallback({ summarized: false })) as { content: { text: string }[] };
+      const parsed = JSON.parse(result.content[0].text);
+
+      expect(parsed.dryRun).toBe(false);
+      expect(parsed.results).toHaveLength(0);
       expect(mockStop).not.toHaveBeenCalled();
     });
 
@@ -543,6 +569,19 @@ describe("StopContainersTool", () => {
       const names = parsed.results.map((r: { name: string }) => r.name);
       expect(names.indexOf("c")).toBeLessThan(names.indexOf("b"));
       expect(names.indexOf("b")).toBeLessThan(names.indexOf("a"));
+    });
+
+    it("invokes stop on dependents in leaf-first order via shared resolver", async () => {
+      const a = makeComposeContainer("aaa000000000000000", "a", "myapp");
+      const b = makeComposeContainer("bbb000000000000000", "b", "myapp", ["a"]);
+      const c = makeComposeContainer("ccc000000000000000", "c", "myapp", ["b"]);
+
+      mockListContainers.mockResolvedValue([a, b, c]);
+
+      await capturedCallback({ dryRun: false, summarized: false, names: ["a"], stopDependents: true });
+
+      const ids = stopOrder.map((id) => id.slice(0, 12));
+      expect(ids).toEqual(["ccc000000000", "bbb000000000", "aaa000000000"]);
     });
 
     it("dryRun shows recursive dependents with correct order", async () => {

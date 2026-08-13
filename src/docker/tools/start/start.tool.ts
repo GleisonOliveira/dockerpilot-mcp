@@ -4,6 +4,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { DockerClient } from "../../../docker/client.js";
 import { BaseTool } from "../../shared/base.tool.js";
 import { tryCatch } from "../../../utils/try-catch.js";
+import { isExcluded, resolveDependencies } from "../../shared/dependency-resolver.js";
 
 const schema = z.object({
   names: z
@@ -53,23 +54,6 @@ export class StartContainersTool extends BaseTool {
     super();
   }
 
-  #isExcluded(excluded: Set<string>, id: string, names: string[]): boolean {
-    const shortId = id.slice(0, 12).toLowerCase();
-    if (excluded.has(shortId) || excluded.has(id.toLowerCase())) return true;
-    return names.some((n) => {
-      const clean = n.replace(/^\//, "").toLowerCase();
-      return excluded.has(clean) || excluded.has(n.toLowerCase());
-    });
-  }
-
-  #getService(c: Dockerode.ContainerInfo): string {
-    return (c.Labels?.["com.docker.compose.service"] ?? "").toLowerCase();
-  }
-
-  #getProject(c: Dockerode.ContainerInfo): string {
-    return (c.Labels?.["com.docker.compose.project"] ?? "").toLowerCase();
-  }
-
   #resolvePrimaryTargets(
     all: Dockerode.ContainerInfo[],
     excluded: Set<string>,
@@ -79,7 +63,7 @@ export class StartContainersTool extends BaseTool {
     const hasFilters = (names && names.length > 0) || (ids && ids.length > 0);
 
     return all.filter((c) => {
-      if (this.#isExcluded(excluded, c.Id, c.Names)) return false;
+      if (isExcluded(excluded, c.Id, c.Names)) return false;
       if (!hasFilters) return true;
 
       const matchesName = names?.some((n) => c.Names.some((cn) => cn.toLowerCase().includes(n.toLowerCase()))) ?? false;
@@ -88,44 +72,6 @@ export class StartContainersTool extends BaseTool {
 
       return matchesName || matchesId;
     });
-  }
-
-  #resolveDependencies(
-    all: Dockerode.ContainerInfo[],
-    primaryTargets: Dockerode.ContainerInfo[],
-    targetIds: Set<string>,
-    excluded: Set<string>,
-  ): Dockerode.ContainerInfo[] {
-    const result: Dockerode.ContainerInfo[] = [];
-    const resolvedIds = new Set(targetIds);
-
-    let frontier = primaryTargets;
-
-    while (frontier.length > 0) {
-      const newDeps = all.filter((c) => {
-        if (resolvedIds.has(c.Id)) return false;
-        if (this.#isExcluded(excluded, c.Id, c.Names)) return false;
-
-        const cService = this.#getService(c);
-        const cProject = this.#getProject(c);
-        if (!cService || !cProject) return false;
-
-        return frontier.some((t) => {
-          if (this.#getProject(t) !== cProject) return false;
-          const raw = t.Labels?.["com.docker.compose.depends_on"] ?? "";
-          if (!raw) return false;
-          const deps = raw.split(",").map((s) => s.trim().split(":")[0].toLowerCase());
-          return deps.includes(cService);
-        });
-      });
-
-      for (const d of newDeps) resolvedIds.add(d.Id);
-      result.push(...newDeps);
-      frontier = newDeps;
-    }
-
-    // deepest dependencies first (leaves before roots), then primaries start last
-    return result.reverse();
   }
 
   async #handle(input: Input) {
@@ -146,9 +92,7 @@ export class StartContainersTool extends BaseTool {
       const targetIds = new Set(primaryTargets.map((c) => c.Id));
 
       const dependencies =
-        (input.startDependencies ?? false)
-          ? this.#resolveDependencies(allStopped, primaryTargets, targetIds, excluded)
-          : [];
+        (input.startDependencies ?? false) ? resolveDependencies(allStopped, primaryTargets, targetIds, excluded) : [];
 
       const dependencyIds = new Set(dependencies.map((d) => d.Id));
 

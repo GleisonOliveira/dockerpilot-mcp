@@ -1,0 +1,722 @@
+{
+  "generated_at": "2026-08-13T01:30:00Z",
+  "modules": [
+    {
+      "name": "core",
+      "path": "src",
+      "purpose": "Bootstrap do servidor MCP, registro de tools e prompts e conectores stdio",
+      "primary_files": [
+        "src/index.ts",
+        "src/server.ts",
+        "src/tools.config.ts",
+        "src/prompts.config.ts"
+      ],
+      "functions": [
+        {
+          "name": "main (index)",
+          "file": "src/index.ts",
+          "params": [],
+          "returns": "Promise<void>",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "DockerPilotServer.start",
+          "file": "src/server.ts",
+          "params": [],
+          "returns": "Promise<void>",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "ToolConstructor",
+          "fields": [
+            { "name": "construct", "type": "new (client: DockerClient) => BaseTool", "required": true }
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "PromptConstructor",
+          "fields": [
+            { "name": "construct", "type": "new () => BasePrompt", "required": true }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "Servidor MCP reporta nome dockerpilot-mcp versão 0.1.0",
+          "location": "src/server.ts",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "Registrar tools e prompts na ordem devolvida pelos containers",
+          "location": "src/server.ts",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["di", "docker-client", "docker-shared"],
+      "algorithms": [],
+      "complexity": "low"
+    },
+    {
+      "name": "di",
+      "path": "src/di",
+      "purpose": "Injeção de dependência trivial: instancia tools com DockerClient e prompts sem args",
+      "primary_files": ["src/di/tool-container.ts", "src/di/prompt-container.ts"],
+      "functions": [
+        {
+          "name": "ToolContainer",
+          "file": "src/di/tool-container.ts",
+          "params": ["constructors: ToolConstructor[]", "client: DockerClient"],
+          "returns": "BaseTool[]",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "PromptContainer",
+          "file": "src/di/prompt-container.ts",
+          "params": ["constructors: PromptConstructor[]"],
+          "returns": "BasePrompt[]",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [],
+      "business_rules": [
+        {
+          "description": "PromptConstructor não recebe argumentos (diferente de ToolConstructor)",
+          "location": "src/di/prompt-container.ts",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["core", "docker-client", "docker-shared"],
+      "algorithms": [],
+      "complexity": "low"
+    },
+    {
+      "name": "utils",
+      "path": "src/utils",
+      "purpose": "Utilitário transversal de tratamento de erro assíncrono",
+      "primary_files": ["src/utils/try-catch.ts"],
+      "functions": [
+        {
+          "name": "tryCatch",
+          "file": "src/utils/try-catch.ts",
+          "params": ["fn: () => Promise<T> | T"],
+          "returns": "TryCatchResult<T>",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "TryCatchResult",
+          "fields": [
+            { "name": "success", "type": "true", "required": true },
+            { "name": "result", "type": "T", "required": true }
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "TryCatchError",
+          "fields": [
+            { "name": "success", "type": "false", "required": true },
+            { "name": "error", "type": "string", "required": true }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "Nunca usar try/catch manual no #handle das tools; sempre tryCatch",
+          "location": "src/utils/try-catch.ts",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": [],
+      "algorithms": [],
+      "complexity": "low"
+    },
+    {
+      "name": "docker-client",
+      "path": "src/docker",
+      "purpose": "Singleton Dockerode com socket por plataforma e verificação de conexão",
+      "primary_files": ["src/docker/client.ts"],
+      "functions": [
+        {
+          "name": "DockerClient.getDocker",
+          "file": "src/docker/client.ts",
+          "params": [],
+          "returns": "Dockerode",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "DockerClient.checkConnection",
+          "file": "src/docker/client.ts",
+          "params": [],
+          "returns": "Promise<void>",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [],
+      "business_rules": [
+        {
+          "description": "Socket /var/run/docker.sock em Unix; //./pipe/docker_engine em Windows",
+          "location": "src/docker/client.ts",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "Toda tool chama checkConnection antes de operar",
+          "location": "src/docker/client.ts",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["utils"],
+      "algorithms": [],
+      "complexity": "low"
+    },
+    {
+      "name": "docker-shared",
+      "path": "src/docker/shared",
+      "purpose": "Contratos BaseTool/BasePrompt e resolvers de campos opcionais de containers",
+      "primary_files": [
+        "src/docker/shared/base.tool.ts",
+        "src/docker/shared/base.prompt.ts",
+        "src/docker/shared/list.resolvers.ts"
+      ],
+      "functions": [
+        {
+          "name": "ContainerFieldResolvers.ports",
+          "file": "src/docker/shared/list.resolvers.ts",
+          "params": ["c: ContainerInfo"],
+          "returns": "{ ports: Port[] }",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ContainerFieldResolvers.mounts",
+          "file": "src/docker/shared/list.resolvers.ts",
+          "params": ["c: ContainerInfo"],
+          "returns": "{ mounts: Mount[] }",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ContainerFieldResolvers.networks",
+          "file": "src/docker/shared/list.resolvers.ts",
+          "params": ["c: ContainerInfo"],
+          "returns": "{ networks: Array<{name, ip, gateway, mac, network_id}> }",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ContainerFieldResolvers.labels",
+          "file": "src/docker/shared/list.resolvers.ts",
+          "params": ["c: ContainerInfo"],
+          "returns": "{ labels: Record<string,string> }",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ContainerFieldResolvers.usage",
+          "file": "src/docker/shared/list.resolvers.ts",
+          "params": ["c: ContainerInfo", "docker: Dockerode"],
+          "returns": "Promise<{ usage: {...} | null }>",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ContainerFieldResolvers.healthcheck",
+          "file": "src/docker/shared/list.resolvers.ts",
+          "params": ["info: ContainerInspectInfo"],
+          "returns": "{ healthcheck: {...} | null }",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ContainerFieldResolvers.restartInfo",
+          "file": "src/docker/shared/list.resolvers.ts",
+          "params": ["info: ContainerInspectInfo"],
+          "returns": "{ restart_info: {policy, max_retry_count, restart_count} }",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ContainerFieldResolvers.composeMetadata",
+          "file": "src/docker/shared/list.resolvers.ts",
+          "params": ["c: ContainerInfo"],
+          "returns": "{ compose_metadata: {...} | null }",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ContainerFieldResolvers.dependencyInfo",
+          "file": "src/docker/shared/list.resolvers.ts",
+          "params": ["c: ContainerInfo"],
+          "returns": "{ dependency_info: string[] }",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ContainerFieldResolvers.resourceLimits",
+          "file": "src/docker/shared/list.resolvers.ts",
+          "params": ["info: ContainerInspectInfo"],
+          "returns": "{ resource_limits: {...} }",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ContainerFieldResolvers.stateDetails",
+          "file": "src/docker/shared/list.resolvers.ts",
+          "params": ["info: ContainerInspectInfo"],
+          "returns": "{ state_details: {...} }",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [],
+      "business_rules": [
+        {
+          "description": "Resolvers que exigem inspect compartilham uma única chamada inspect no list_containers",
+          "location": "src/docker/tools/list/list.tool.ts:70",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "network_id truncado em 12 chars nas respostas",
+          "location": "src/docker/shared/list.resolvers.ts:19",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "usage só calcula para containers running; falha de stats vira usage null",
+          "location": "src/docker/shared/list.resolvers.ts:29",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["docker-client", "utils"],
+      "algorithms": [
+        {
+          "name": "cálculo de cpu_percent",
+          "description": "delta total_usage / delta system_cpu_usage * numCpus * 100; mem exclui cache",
+          "location": "src/docker/shared/list.resolvers.ts:34-47",
+          "confidence": "confirmed"
+        }
+      ],
+      "complexity": "medium"
+    },
+    {
+      "name": "tools-containers",
+      "path": "src/docker/tools/{list,stop,start,restart,delete,create-container}",
+      "purpose": "Tools de ciclo de vida de containers: listar, parar, iniciar, reiniciar, deletar e criar",
+      "primary_files": [
+        "src/docker/tools/list/list.tool.ts",
+        "src/docker/tools/stop/stop.tool.ts",
+        "src/docker/tools/start/start.tool.ts",
+        "src/docker/tools/restart/restart.tool.ts",
+        "src/docker/tools/delete/delete.tool.ts",
+        "src/docker/tools/create-container/create-container.tool.ts"
+      ],
+      "functions": [
+        {
+          "name": "ListContainersTool",
+          "file": "src/docker/tools/list/list.tool.ts",
+          "params": ["client: DockerClient", "input: ListInput"],
+          "returns": "ContainerItem[]",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "StopContainersTool",
+          "file": "src/docker/tools/stop/stop.tool.ts",
+          "params": ["client: DockerClient", "input: StopInput"],
+          "returns": "preview | {success} | {results}",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "StartContainersTool",
+          "file": "src/docker/tools/start/start.tool.ts",
+          "params": ["client: DockerClient", "input: StartInput"],
+          "returns": "preview | {success} | {results}",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "RestartContainerTool",
+          "file": "src/docker/tools/restart/restart.tool.ts",
+          "params": ["client: DockerClient", "input: {id}"],
+          "returns": "{restarted, container:{id,name,status}}",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "DeleteContainerTool",
+          "file": "src/docker/tools/delete/delete.tool.ts",
+          "params": ["client: DockerClient", "input: {id, force, removeImage, confirmed}"],
+          "returns": "preview | {deleted, id, name}",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "CreateContainerTool",
+          "file": "src/docker/tools/create-container/create-container.tool.ts",
+          "params": ["client: DockerClient", "input: CreateInput"],
+          "returns": "{created, started, container}",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [],
+      "business_rules": [
+        {
+          "description": "delete_container exige confirmed=true; senão retorna preview sem executar",
+          "location": "src/docker/tools/delete/delete.tool.ts:84",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "stop/start: filtros por names (substring) ou ids (prefixo); sem filtros = todos",
+          "location": "src/docker/tools/stop/stop.tool.ts:87",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "stopDependents/startDependencies resolvem fecho transitivo apenas dentro do mesmo Compose project",
+          "location": "src/docker/tools/stop/stop.tool.ts:123",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "create_container faz pull da imagem sempre antes de criar",
+          "location": "src/docker/tools/create-container/create-container.tool.ts:154",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "restart_container aceita nome exato (sem /) ou prefixo de ID",
+          "location": "src/docker/tools/restart/restart.tool.ts:33",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "stop: handler usa dryRun ?? true (default efetivo true) divergente do schema (default false)",
+          "location": "src/docker/tools/stop/stop.tool.ts:157",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["docker-client", "docker-shared", "utils"],
+      "algorithms": [
+        {
+          "name": "resolveDependents (BFS reverso)",
+          "description": "dependentes de alvos via label com.docker.compose.depends_on no mesmo project; resultado revertido",
+          "location": "src/docker/tools/stop/stop.tool.ts:101-132",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "resolveDependencies (BFS inverso)",
+          "description": "dependências de alvos; folhas antes das raízes",
+          "location": "src/docker/tools/start/start.tool.ts:93-129",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "normalização de portas",
+          "description": "container port sem protocolo ganha /tcp",
+          "location": "src/docker/tools/create-container/create-container.tool.ts:117",
+          "confidence": "confirmed"
+        }
+      ],
+      "complexity": "high"
+    },
+    {
+      "name": "tools-container-ops",
+      "path": "src/docker/tools/{exec-command,container-logs}",
+      "purpose": "Execução de comandos e leitura de logs dentro de containers",
+      "primary_files": [
+        "src/docker/tools/exec-command/exec-command.tool.ts",
+        "src/docker/tools/container-logs/container-logs.tool.ts"
+      ],
+      "functions": [
+        {
+          "name": "ExecCommandTool",
+          "file": "src/docker/tools/exec-command/exec-command.tool.ts",
+          "params": ["client: DockerClient", "input: {id, command, silent}"],
+          "returns": "{containerId, command, exitCode, success, output?}",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ContainerLogsTool",
+          "file": "src/docker/tools/container-logs/container-logs.tool.ts",
+          "params": ["client: DockerClient", "input: {id, tail}"],
+          "returns": "{containerId, tail, logs: string[]}",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [],
+      "business_rules": [
+        {
+          "description": "exec_command e container_logs aceitam apenas ID (prefixo), nunca nome",
+          "location": "src/docker/tools/exec-command/exec-command.tool.ts:46",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "exec_command exige container em estado running",
+          "location": "src/docker/tools/exec-command/exec-command.tool.ts:50",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "comando é dividido por /\s+/ (sem suporte a aspas)",
+          "location": "src/docker/tools/exec-command/exec-command.tool.ts:56",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["docker-client", "utils"],
+      "algorithms": [
+        {
+          "name": "parse de stream multiplexado docker (frames de 8 bytes)",
+          "description": "header [4B stream][4B size BE]; concatena payloads; fallback raw",
+          "location": "src/docker/tools/exec-command/exec-command.tool.ts:70-83",
+          "confidence": "confirmed"
+        }
+      ],
+      "complexity": "medium"
+    },
+    {
+      "name": "tools-images",
+      "path": "src/docker/tools/{list-images,delete-image,pull-image,prune-images}",
+      "purpose": "Gestão de imagens: listar, deletar, puxar e podar dangling",
+      "primary_files": [
+        "src/docker/tools/list-images/list-images.tool.ts",
+        "src/docker/tools/delete-image/delete-image.tool.ts",
+        "src/docker/tools/pull-image/pull-image.tool.ts",
+        "src/docker/tools/prune-images/prune-images.tool.ts"
+      ],
+      "functions": [
+        {
+          "name": "ListImagesTool",
+          "file": "src/docker/tools/list-images/list-images.tool.ts",
+          "params": ["client: DockerClient", "input: ListImagesInput"],
+          "returns": "ImageItem[]",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "DeleteImageTool",
+          "file": "src/docker/tools/delete-image/delete-image.tool.ts",
+          "params": ["client: DockerClient", "input: {id, force, confirmed}"],
+          "returns": "preview | {deleted, id, tags, removed}",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "PullImageTool",
+          "file": "src/docker/tools/pull-image/pull-image.tool.ts",
+          "params": ["client: DockerClient", "input: {image}"],
+          "returns": "{pulled, image, id, tags, size_bytes}",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "PruneImagesTool",
+          "file": "src/docker/tools/prune-images/prune-images.tool.ts",
+          "params": ["client: DockerClient", "input: {force, confirmed}"],
+          "returns": "preview | {deleted, count, total_freed_mb, ...}",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [],
+      "business_rules": [
+        {
+          "description": "delete_image e prune_images exigem confirmed=true",
+          "location": "src/docker/tools/delete-image/delete-image.tool.ts:72",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "delete_image aceita short ID, full ID, sha256: full ID ou tag",
+          "location": "src/docker/tools/delete-image/delete-image.tool.ts:27-42",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "prune usa Promise.allSettled e separa sucesso/falha",
+          "location": "src/docker/tools/prune-images/prune-images.tool.ts:55",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["docker-client", "utils"],
+      "algorithms": [],
+      "complexity": "medium"
+    },
+    {
+      "name": "tools-volumes",
+      "path": "src/docker/tools/{list-volumes,create-volume,delete-volume}",
+      "purpose": "Gestão de volumes: listar, criar com driver específico e deletar com proteção",
+      "primary_files": [
+        "src/docker/tools/list-volumes/list-volumes.tool.ts",
+        "src/docker/tools/create-volume/create-volume.tool.ts",
+        "src/docker/tools/delete-volume/delete-volume.tool.ts"
+      ],
+      "functions": [
+        {
+          "name": "ListVolumesTool",
+          "file": "src/docker/tools/list-volumes/list-volumes.tool.ts",
+          "params": ["client: DockerClient", "input: ListVolumesInput"],
+          "returns": "VolumeItem[]",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "CreateVolumeTool",
+          "file": "src/docker/tools/create-volume/create-volume.tool.ts",
+          "params": ["client: DockerClient", "input: CreateVolumeInput"],
+          "returns": "{created, volume, container, mountOptions, note}",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "DeleteVolumeTool",
+          "file": "src/docker/tools/delete-volume/delete-volume.tool.ts",
+          "params": ["client: DockerClient", "input: {name, confirmed}"],
+          "returns": "preview | {deleted, name}",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [],
+      "business_rules": [
+        {
+          "description": "create_volume associa volume ao container via labels mcp.container.id/name (sem mount)",
+          "location": "src/docker/tools/create-volume/create-volume.tool.ts:146-150",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "delete_volume bloqueia remoção de volume em uso (Docker não força)",
+          "location": "src/docker/tools/delete-volume/delete-volume.tool.ts:69-75",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "Docker não suporta hot-mount; recriar container para aplicar mount",
+          "location": "src/docker/tools/create-volume/create-volume.tool.ts:174-177",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["docker-client", "utils"],
+      "algorithms": [
+        {
+          "name": "buildDriverOpts por driver",
+          "description": "local bind (device/type/o), nfs (addr/device=:share/vers), tmpfs (size/mode)",
+          "location": "src/docker/tools/create-volume/create-volume.tool.ts:92-113",
+          "confidence": "confirmed"
+        }
+      ],
+      "complexity": "medium"
+    },
+    {
+      "name": "tools-daemon",
+      "path": "src/docker/tools/docker-status",
+      "purpose": "Saúde e informações agregadas do daemon Docker",
+      "primary_files": ["src/docker/tools/docker-status/docker-status.tool.ts"],
+      "functions": [
+        {
+          "name": "DockerStatusTool",
+          "file": "src/docker/tools/docker-status/docker-status.tool.ts",
+          "params": ["client: DockerClient"],
+          "returns": "{status: running, version, system, containers, images, disk_usage, plugins, swarm, warnings}",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [],
+      "business_rules": [
+        {
+          "description": "reclaimable_bytes só considera imagens sem containers (Containers === 0)",
+          "location": "src/docker/tools/docker-status/docker-status.tool.ts:56-60",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "falha de conexão retorna {status: unavailable} com isError true",
+          "location": "src/docker/tools/docker-status/docker-status.tool.ts:88-95",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["docker-client", "utils"],
+      "algorithms": [],
+      "complexity": "low"
+    },
+    {
+      "name": "prompts",
+      "path": "src/docker/prompts",
+      "purpose": "Prompts orientadores do agente: troubleshooting, limpeza de imagens, remoção de volume e orquestração Compose",
+      "primary_files": [
+        "src/docker/prompts/container-troubleshoot/container-troubleshoot.prompt.ts",
+        "src/docker/prompts/image-cleanup/image-cleanup.prompt.ts",
+        "src/docker/prompts/volume-removal/volume-removal.prompt.ts",
+        "src/docker/prompts/compose-start/compose-start.prompt.ts",
+        "src/docker/prompts/compose-stop/compose-stop.prompt.ts",
+        "src/docker/prompts/compose-restart/compose-restart.prompt.ts",
+        "src/docker/prompts/compose-service/compose-service.prompt.ts"
+      ],
+      "functions": [
+        {
+          "name": "ContainerTroubleshootPrompt",
+          "file": "src/docker/prompts/container-troubleshoot/container-troubleshoot.prompt.ts",
+          "params": ["server: McpServer"],
+          "returns": "void",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ImageCleanupPrompt",
+          "file": "src/docker/prompts/image-cleanup/image-cleanup.prompt.ts",
+          "params": ["server: McpServer"],
+          "returns": "void",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "VolumeRemovalPrompt",
+          "file": "src/docker/prompts/volume-removal/volume-removal.prompt.ts",
+          "params": ["server: McpServer"],
+          "returns": "void",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ComposeStartPrompt",
+          "file": "src/docker/prompts/compose-start/compose-start.prompt.ts",
+          "params": ["server: McpServer"],
+          "returns": "void",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ComposeStopPrompt",
+          "file": "src/docker/prompts/compose-stop/compose-stop.prompt.ts",
+          "params": ["server: McpServer"],
+          "returns": "void",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ComposeRestartPrompt",
+          "file": "src/docker/prompts/compose-restart/compose-restart.prompt.ts",
+          "params": ["server: McpServer"],
+          "returns": "void",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ComposeServicePrompt",
+          "file": "src/docker/prompts/compose-service/compose-service.prompt.ts",
+          "params": ["server: McpServer"],
+          "returns": "void",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "ComposeServiceArgs",
+          "fields": [
+            { "name": "service_name", "type": "string", "required": false },
+            { "name": "action", "type": "string", "required": false }
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ComposeStopArgs",
+          "fields": [
+            { "name": "project_dir", "type": "string", "required": false }
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "ComposeRestartArgs",
+          "fields": [
+            { "name": "project_dir", "type": "string", "required": false }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "volume_removal exige dupla confirmação com typing DELETE para alto risco",
+          "location": "src/docker/prompts/volume-removal/volume-removal.template.ts",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "prompts em inglês; promts não recebem DockerClient",
+          "location": "src/docker/prompts",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "compose_start/stop/restart instruem uso de Bash; compose_service usa as tools MCP",
+          "location": "src/docker/prompts",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": [],
+      "algorithms": [],
+      "complexity": "low"
+    }
+  ]
+}

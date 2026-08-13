@@ -15,6 +15,8 @@ Allows AI agents to interact with Docker containers via the MCP protocol — no 
 - Docker running locally with socket at `/var/run/docker.sock`
 - Node.js 22+
 
+> **Note — no own Dockerfile (DT7):** this MCP server has no Dockerfile of its own. It runs as a host process (via `npx`/npm) so it can reach the Docker daemon socket. To run it inside a container, build a base image with Node.js 20+ and copy the built `dist/`, mounting `/var/run/docker.sock`.
+
 ## Installation
 
 The recommended way is via `npx` — no installation required:
@@ -174,6 +176,10 @@ Then use `node /path/to/container-commands-mcp/dist/index.js` as the command in 
 | `container_troubleshoot` | Diagnostic guide for Docker container problems | User reports container not working, not starting, port conflict, crash loop, etc. |
 | `image_cleanup` | Guide to reclaim disk space by removing dangling images | User reports low disk space or wants to clean up unused Docker images. |
 | `volume_removal` | Safe Docker volume removal workflow with risk assessment and double-confirmation for high-risk volumes (databases, app state, secrets). | User wants to remove a Docker volume safely. |
+| `compose_start` | Guides the agent to bring up the entire Docker Compose project in detached mode (`docker compose up -d`). Optional argument: `project_dir`. | User wants to run the project, bring up all services, or execute `docker compose up`. |
+| `compose_stop` | Guides the agent to bring down the entire Docker Compose project (`docker compose down`). Optional argument: `project_dir`. | User wants to shut down the application, stop all services, or execute `docker compose down`. |
+| `compose_restart` | Guides the agent to restart all services of the Docker Compose project. Optional argument: `project_dir`. | User wants to restart all services or apply configuration changes by cycling the project. |
+| `compose_service` | Guides the agent to manage a single Compose service (start/stop/restart) via MCP tools (`list_containers`, `start_containers`, `stop_containers`, `restart_container`, `container_logs`). Optional arguments: `service_name`, `action`. | User wants to manage one specific service, not the whole project. |
 
 ## Architecture
 

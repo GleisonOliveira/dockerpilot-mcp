@@ -205,5 +205,35 @@ describe("DeleteImageTool", () => {
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.confirmed).toBe(false);
     });
+
+    it("returns error when multiple images match a short prefix", async () => {
+      mockListImages.mockResolvedValue([
+        makeImage("abc123000000000000", ["nginx:1.25.0"]),
+        makeImage("abc123111111111111", ["nginx:1.26.0"]),
+      ]);
+
+      const result = (await capturedCallback({ id: "abc123", confirmed: false })) as {
+        content: { text: string }[];
+        isError?: boolean;
+      };
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toMatch(/Multiple images match/i);
+      expect(result.content[0].text).toMatch(/full image ID/);
+      expect(mockRemoveImage).not.toHaveBeenCalled();
+    });
+
+    it("resolves unique match when only one image matches the prefix", async () => {
+      mockListImages.mockResolvedValue([
+        makeImage("abc123000000000000", ["nginx:1.25.0"]),
+        makeImage("xyz456111111111111", ["nginx:1.26.0"]),
+      ]);
+
+      const result = (await capturedCallback({ id: "abc123", confirmed: false })) as {
+        content: { text: string }[];
+      };
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.confirmed).toBe(false);
+      expect(parsed.preview.id).toBe("abc123000000");
+    });
   });
 });

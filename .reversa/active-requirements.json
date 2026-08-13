@@ -1,0 +1,10 @@
+{
+  "schema-version": 1,
+  "feature-dir": "_reversa_forward/001-corrigir-gaps-sync-inicial",
+  "feature-id": "001",
+  "short-name": "corrigir-gaps-sync-inicial",
+  "started-at": "2026-08-13T01:58:42Z",
+  "current-stage": "requirements",
+  "stages-completed": [],
+  "paused-features": []
+}

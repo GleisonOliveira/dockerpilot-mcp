@@ -8,6 +8,8 @@ const mockInspect = vi.fn();
 const mockStart = vi.fn();
 const mockPull = vi.fn();
 const mockFollowProgress = vi.fn();
+const mockGetImage = vi.fn();
+const mockInspectImage = vi.fn();
 const mockCheckConnection = vi.fn().mockResolvedValue(undefined);
 
 const mockClient = {
@@ -16,6 +18,7 @@ const mockClient = {
     pull: mockPull,
     modem: { followProgress: mockFollowProgress },
     createContainer: mockCreateContainer,
+    getImage: mockGetImage,
   }),
 } as unknown as DockerClient;
 
@@ -78,6 +81,8 @@ describe("CreateContainerTool", () => {
     mockStart.mockResolvedValue(undefined);
     mockInspect.mockResolvedValue(makeInspectResponse());
     mockCreateContainer.mockResolvedValue({ start: mockStart, inspect: mockInspect });
+    mockGetImage.mockReturnValue({ inspect: mockInspectImage });
+    mockInspectImage.mockRejectedValue(new Error("No such image"));
 
     const tool = buildTool();
     const fakeServer = {
@@ -87,6 +92,21 @@ describe("CreateContainerTool", () => {
     } as unknown as McpServer;
 
     tool.register(fakeServer);
+  });
+
+  describe("registration", () => {
+    it("registers tool description as 'Create a Docker container and start it'", () => {
+      let registeredConfig: { description?: string } = {};
+      const server = {
+        registerTool: (_name: string, config: { description?: string }) => {
+          registeredConfig = config;
+        },
+      } as unknown as McpServer;
+
+      buildTool().register(server);
+
+      expect(registeredConfig.description).toContain("Create a Docker container and start it");
+    });
   });
 
   describe("validation", () => {
@@ -141,11 +161,22 @@ describe("CreateContainerTool", () => {
   });
 
   describe("image pull", () => {
-    it("pulls image before creating container", async () => {
+    it("pulls image before creating container when image is absent locally", async () => {
       await capturedCallback({ image: "nginx:latest" });
 
+      expect(mockInspectImage).toHaveBeenCalled();
       expect(mockPull).toHaveBeenCalledWith("nginx:latest");
       expect(mockFollowProgress).toHaveBeenCalled();
+      expect(mockCreateContainer).toHaveBeenCalled();
+    });
+
+    it("does not pull when image already exists locally", async () => {
+      mockInspectImage.mockResolvedValue({ Id: "sha256:abc", RepoTags: ["nginx:latest"] });
+
+      await capturedCallback({ image: "nginx:latest" });
+
+      expect(mockInspectImage).toHaveBeenCalled();
+      expect(mockPull).not.toHaveBeenCalled();
       expect(mockCreateContainer).toHaveBeenCalled();
     });
 

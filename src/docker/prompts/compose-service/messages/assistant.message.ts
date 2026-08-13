@@ -8,16 +8,16 @@ I'll manage the \`${nameArg}\` service using the MCP tools available in this ses
 
 ---
 
-## 0. Read the Compose file to identify services
+## 0. Identify the service
 
-Before anything else, read the \`docker-compose.yml\` (or \`compose.yaml\`) file in the project directory to discover all service names and their configurations:
+\`list_containers\` with \`includeComposeMetadata: true\` exposes the Compose project, service name and config files (\`compose_metadata.project\`, \`compose_metadata.service\`, \`compose_metadata.config_files\`, \`compose_metadata.working_dir\`) read from the \`com.docker.compose.*\` labels:
 
 \`\`\`
-tool: exec_command
-args: { command: "cat", args: ["docker-compose.yml"] }
+tool: list_containers
+args: { all: true, includeComposeMetadata: true }
 \`\`\`
 
-If not found, try \`compose.yaml\`, \`docker-compose.yaml\`, or \`compose.yml\`. Look for the \`services:\` key — each entry is a service name. Note any \`container_name:\` overrides, as those become the exact container name instead of the default \`<project>-<service>-1\` pattern.
+Look for the container whose \`compose_metadata.service\` matches the service to manage — that gives you the exact container name. Note any \`container_name:\` override in the Compose config, which becomes the exact container name instead of the default \`<project>-<service>-1\` pattern.
 
 ---
 
@@ -106,5 +106,5 @@ args: { id: "<container-id>", tail: 30 }
 
 ## Next step
 
-Read the Compose file first to identify the service, then run \`list_containers\` to get the exact container name for \`${nameArg}\`, then apply the requested action.`;
+Run \`list_containers\` with \`includeComposeMetadata: true\` to identify the service and get the exact container name for \`${nameArg}\`, then apply the requested action.`;
 }
