@@ -135,6 +135,104 @@ args = ["-y", "dockerpilot-mcp@latest"]
 </details>
 
 <details>
+<summary><strong>Gemini CLI (Google)</strong></summary>
+
+Run in terminal:
+
+```bash
+gemini mcp add dockerpilot -- npx -y dockerpilot-mcp@latest
+```
+
+Or add to `~/.gemini/settings.json` (user) or `.gemini/settings.json` (project):
+
+```json
+{
+  "mcpServers": {
+    "dockerpilot": {
+      "command": "npx",
+      "args": ["-y", "dockerpilot-mcp@latest"]
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><strong>Zed</strong></summary>
+
+Zed calls MCP servers "context servers". Add to `settings.json` — global (`~/.config/zed/settings.json` on Linux, `~/Library/Application Support/Zed/settings.json` on macOS, `%APPDATA%\Zed\settings.json` on Windows) or per-project `.zed/settings.json`:
+
+```json
+{
+  "context_servers": {
+    "dockerpilot": {
+      "command": "npx",
+      "args": ["-y", "dockerpilot-mcp@latest"]
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><strong>Cline (VS Code)</strong></summary>
+
+Add to `~/.cline/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "dockerpilot": {
+      "command": "npx",
+      "args": ["-y", "dockerpilot-mcp@latest"]
+    }
+  }
+}
+```
+
+Or add it through the **MCP Servers** panel in the Cline extension (Configure tab → Configure MCP Servers).
+
+</details>
+
+<details>
+<summary><strong>Continue (VS Code / JetBrains)</strong></summary>
+
+Drop a standard MCP config into the `.continue/mcpServers/` directory of your workspace, e.g. `.continue/mcpServers/dockerpilot.json`:
+
+```json
+{
+  "mcpServers": {
+    "dockerpilot": {
+      "command": "npx",
+      "args": ["-y", "dockerpilot-mcp@latest"]
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><strong>Roo Code (VS Code)</strong></summary>
+
+Add to `~/.roo/mcp_settings.json` (global) or `.roo/mcp_settings.json` (project):
+
+```json
+{
+  "mcpServers": {
+    "dockerpilot": {
+      "command": "npx",
+      "args": ["-y", "dockerpilot-mcp@latest"]
+    }
+  }
+}
+```
+
+</details>
+
+<details>
 <summary><strong>Local build (any client)</strong></summary>
 
 Build locally and point to the output:
