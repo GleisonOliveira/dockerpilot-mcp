@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { DockerPilotServer } from "../src/server.js";
+
+const require = createRequire(import.meta.url);
 
 vi.mock("@modelcontextprotocol/sdk/server/stdio.js", () => ({
   StdioServerTransport: vi.fn().mockImplementation(function () {
@@ -99,5 +103,16 @@ describe("DockerPilotServer", () => {
     expect(StdioServerTransport).toHaveBeenCalledOnce();
     expect(connectMock).toHaveBeenCalledOnce();
     expect(connectMock).toHaveBeenCalledWith(expect.any(Object));
+  });
+
+  it("server.ts and package.json report the same version (0.1.0)", () => {
+    const pkg = require("../package.json");
+    const serverSource = readFileSync(new URL("../src/server.ts", import.meta.url), "utf8");
+    const serverVersion = serverSource.match(/version:\s*"([^"]+)"/)?.[1];
+
+    expect(serverVersion).toBeDefined();
+    expect(serverVersion).toBe("0.1.0");
+    expect(pkg.version).toBe("0.1.0");
+    expect(serverVersion).toBe(pkg.version);
   });
 });

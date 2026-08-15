@@ -1,0 +1,25 @@
+{"ts":"2026-08-12T12:00:00Z","action":"T001","status":"done","files":["src/docker/shared/parse-command.ts"]}
+{"ts":"2026-08-12T12:00:00Z","action":"T002","status":"done","files":["src/docker/shared/dependency-resolver.ts"]}
+{"ts":"2026-08-12T12:05:00Z","action":"T003","status":"done","files":["tests/docker/shared/parse-command.test.ts"]}
+{"ts":"2026-08-12T12:05:00Z","action":"T004","status":"done","files":["tests/docker/shared/dependency-resolver.test.ts"]}
+{"ts":"2026-08-12T12:10:00Z","action":"T005","status":"done","files":["src/docker/tools/stop/stop.tool.ts"]}
+{"ts":"2026-08-12T12:10:00Z","action":"T006","status":"done","files":["src/docker/tools/stop/stop.tool.ts"]}
+{"ts":"2026-08-12T12:10:00Z","action":"T007","status":"done","files":["src/docker/tools/start/start.tool.ts"]}
+{"ts":"2026-08-12T12:10:00Z","action":"T008","status":"done","files":["src/docker/tools/create-container/create-container.tool.ts"]}
+{"ts":"2026-08-12T12:10:00Z","action":"T009","status":"done","files":["src/docker/tools/create-container/create-container.tool.ts"]}
+{"ts":"2026-08-12T12:10:00Z","action":"T010","status":"done","files":["src/docker/tools/delete-image/delete-image.tool.ts"]}
+{"ts":"2026-08-12T12:10:00Z","action":"T011","status":"done","files":["src/docker/tools/docker-status/docker-status.tool.ts"]}
+{"ts":"2026-08-12T12:10:00Z","action":"T012","status":"done","files":["src/docker/tools/exec-command/exec-command.tool.ts"]}
+{"ts": "2026-08-12T23:20:00Z", "action": "T013", "status": "done", "files": ["tests/docker/tools/stop/stop.tool.test.ts"]}
+{"ts": "2026-08-12T23:20:00Z", "action": "T014", "status": "done", "files": ["tests/docker/tools/stop/stop.tool.test.ts"]}
+{"ts": "2026-08-12T23:20:00Z", "action": "T015", "status": "done", "files": ["tests/docker/tools/start/start.tool.test.ts"]}
+{"ts": "2026-08-12T23:20:00Z", "action": "T016", "status": "done", "files": ["tests/docker/tools/create-container/create-container.tool.test.ts"]}
+{"ts": "2026-08-12T23:20:00Z", "action": "T017", "status": "done", "files": ["tests/docker/tools/delete-image/delete-image.tool.test.ts"]}
+{"ts": "2026-08-12T23:20:00Z", "action": "T018", "status": "done", "files": ["tests/docker/tools/docker-status/docker-status.tool.test.ts"]}
+{"ts": "2026-08-12T23:20:00Z", "action": "T019", "status": "done", "files": ["tests/docker/tools/exec-command/exec-command.tool.test.ts"]}
+{"ts": "2026-08-12T23:24:00Z", "action": "T020", "status": "done", "files": ["package.json"]}
+{"ts": "2026-08-12T23:24:00Z", "action": "T021", "status": "done", "files": ["tests/server.test.ts"]}
+{"ts": "2026-08-12T23:24:00Z", "action": "T022", "status": "done", "files": ["AGENTS.md"]}
+{"ts": "2026-08-12T23:24:00Z", "action": "T023", "status": "done", "files": ["README.md"]}
+{"ts": "2026-08-12T23:24:00Z", "action": "T024", "status": "done", "files": ["src/docker/prompts/compose-service/messages/assistant.message.ts", "tests/docker/prompts/compose-service/messages/assistant.message.test.ts", "tests/docker/prompts/compose-service/compose-service.prompt.test.ts"]}
+{"ts": "2026-08-14T00:00:00Z", "action": "E001", "status": "done", "files": ["src/docker/prompts/compose-service/messages/assistant.message.ts", "tests/docker/prompts/compose-service/messages/assistant.message.test.ts", "tests/docker/prompts/compose-service/compose-service.prompt.test.ts"]}

@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { DockerClient } from "../../../docker/client.js";
 import { BaseTool } from "../../shared/base.tool.js";
 import { tryCatch } from "../../../utils/try-catch.js";
+import { parseCommand } from "../../shared/parse-command.js";
 
 const schema = z.object({
   id: z.string().describe("Container ID (full or prefix). Name not accepted."),
@@ -53,7 +54,7 @@ export class ExecCommandTool extends BaseTool {
 
       const container = docker.getContainer(match.Id);
 
-      const cmd = input.command.trim().split(/\s+/);
+      const cmd = parseCommand(input.command);
 
       const exec = await container.exec({
         Cmd: cmd,

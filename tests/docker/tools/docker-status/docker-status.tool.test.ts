@@ -203,21 +203,22 @@ describe("DockerStatusTool", () => {
       mockCheckConnection.mockRejectedValue(new Error("Docker is not running"));
 
       const result = (await capturedCallback()) as { content: { text: string }[]; isError: boolean };
-      const parsed = JSON.parse(result.content[0].text);
+      const text = result.content[0].text;
 
       expect(result.isError).toBe(true);
-      expect(parsed.status).toBe("unavailable");
-      expect(parsed.error).toContain("Docker is not running");
+      expect(text).toMatch(/^Error docker_status: /);
+      expect(text).toContain("Docker is not running");
     });
 
     it("returns isError when info call fails", async () => {
       mockInfo.mockRejectedValue(new Error("connection refused"));
 
       const result = (await capturedCallback()) as { content: { text: string }[]; isError: boolean };
-      const parsed = JSON.parse(result.content[0].text);
+      const text = result.content[0].text;
 
       expect(result.isError).toBe(true);
-      expect(parsed.status).toBe("unavailable");
+      expect(text).toMatch(/^Error docker_status: /);
+      expect(text).toContain("connection refused");
     });
   });
 

@@ -151,16 +151,28 @@ export class CreateContainerTool extends BaseTool {
       await this.client.checkConnection();
       const docker = this.client.getDocker();
 
-      const stream = await docker.pull(input.image.trim());
-      await new Promise<void>((resolve, reject) => {
-        docker.modem.followProgress(stream, (err: Error | null) => (err ? reject(err) : resolve()));
-      });
+      const imageRef = input.image.trim();
+
+      let imageExists: boolean;
+      try {
+        await docker.getImage(imageRef).inspect();
+        imageExists = true;
+      } catch {
+        imageExists = false;
+      }
+
+      if (!imageExists) {
+        const stream = await docker.pull(imageRef);
+        await new Promise<void>((resolve, reject) => {
+          docker.modem.followProgress(stream, (err: Error | null) => (err ? reject(err) : resolve()));
+        });
+      }
 
       const exposedPorts = input.ports ? this.#buildExposedPorts(input.ports) : undefined;
       const portBindings = input.ports ? this.#buildPortBindings(input.ports) : undefined;
 
       const container = await docker.createContainer({
-        Image: input.image.trim(),
+        Image: imageRef,
         name: input.name,
         Cmd: input.command,
         Env: input.env ? this.#buildEnv(input.env) : undefined,
@@ -223,8 +235,9 @@ export class CreateContainerTool extends BaseTool {
       "create_container",
       {
         description:
-          "Create a Docker container without starting it. " +
+          "Create a Docker container and start it. " +
           "image is required (e.g. nginx:latest). " +
+          "If the image is not present locally it is pulled first. " +
           "name: optional container name. " +
           "command: overrides image CMD (array of strings). " +
           "env: environment variables as key-value pairs. " +
@@ -234,8 +247,7 @@ export class CreateContainerTool extends BaseTool {
           "restart_policy: no | always | on-failure | unless-stopped. " +
           "healthcheck: { test, interval_seconds, timeout_seconds, retries, start_period_seconds }. " +
           "resources: { memory_mb, cpu_shares, cpu_quota, cpu_period }. " +
-          "labels: key-value metadata. " +
-          "After creation, use start_containers to start the container.",
+          "labels: key-value metadata.",
         inputSchema: schema.shape,
       },
       this.#handle.bind(this),

@@ -10,12 +10,7 @@ I'll manage the \`${nameArg}\` service using the MCP tools available in this ses
 
 ## 0. Read the Compose file to identify services
 
-Before anything else, read the \`docker-compose.yml\` (or \`compose.yaml\`) file in the project directory to discover all service names and their configurations:
-
-\`\`\`
-tool: exec_command
-args: { command: "cat", args: ["docker-compose.yml"] }
-\`\`\`
+Before anything else, read the \`docker-compose.yml\` (or \`compose.yaml\`) file in the project directory to discover all service names and their configurations.
 
 If not found, try \`compose.yaml\`, \`docker-compose.yaml\`, or \`compose.yml\`. Look for the \`services:\` key — each entry is a service name. Note any \`container_name:\` overrides, as those become the exact container name instead of the default \`<project>-<service>-1\` pattern.
 

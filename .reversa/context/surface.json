@@ -1,0 +1,83 @@
+{
+  "generated_at": "2026-08-13T00:00:00Z",
+  "project_root": "/home/ubuntu/container-commands-mcp",
+  "project_name": "dockerpilot-mcp",
+  "languages": [
+    {
+      "name": "TypeScript",
+      "extensions": [".ts"],
+      "file_count": 105
+    }
+  ],
+  "primary_language": "TypeScript",
+  "frameworks": [
+    { "name": "@modelcontextprotocol/sdk", "version": "^1.12.0 (lock 1.29.0)", "source": "package.json" },
+    { "name": "dockerode", "version": "^5.0.0", "source": "package.json" },
+    { "name": "zod", "version": "^3.23.8", "source": "package.json" },
+    { "name": "vitest", "version": "^4.1.7", "source": "package.json" },
+    { "name": "tsup", "version": "^8.3.5", "source": "package.json" },
+    { "name": "eslint", "version": "^10.4.0", "source": "package.json" },
+    { "name": "prettier", "version": "^3.8.3", "source": "package.json" }
+  ],
+  "package_manager": "npm",
+  "runtime": "node >= 22 (ESM)",
+  "entry_points": [
+    { "path": "src/index.ts", "type": "cli_entry" },
+    { "path": "src/server.ts", "type": "server_entry" }
+  ],
+  "config_files": [
+    "tsconfig.json",
+    "eslint.config.js",
+    ".prettierrc",
+    "vitest.config.ts",
+    ".gitignore"
+  ],
+  "ci_cd": [
+    ".github/workflows/main.yml",
+    ".github/workflows/pr.yml",
+    ".github/workflows/publish.yml"
+  ],
+  "docker": {
+    "dockerfile": null,
+    "compose": null
+  },
+  "database_hints": [],
+  "external_integrations": [
+    {
+      "name": "Docker daemon",
+      "via": "dockerode",
+      "socket": "/var/run/docker.sock (unix) | //./pipe/docker_engine (windows)",
+      "notes": "unica integracao externa; checkConnection faz docker.ping()"
+    }
+  ],
+  "test_framework": "Vitest",
+  "test_file_count": 50,
+  "coverage_threshold": 95,
+  "src_file_count": 55,
+  "total_files": 105,
+  "license": "PolyForm Noncommercial 1.0.0",
+  "modules": [
+    "core",
+    "di",
+    "utils",
+    "docker-client",
+    "docker-shared",
+    "tools-containers",
+    "tools-container-ops",
+    "tools-images",
+    "tools-volumes",
+    "tools-daemon",
+    "prompts"
+  ],
+  "organization_suggestion": {
+    "granularity": "endpoint",
+    "rationale": "O servidor MCP expõe tools e prompts como contratos registrados centralmente em tools.config.ts e prompts.config.ts; cada tool e um endpoint/contrato com schema Zod proprio.",
+    "signals": [
+      {
+        "type": "centralized_routing_registration",
+        "evidence": ["src/tools.config.ts", "src/prompts.config.ts", "src/server.ts"]
+      }
+    ],
+    "features": []
+  }
+}

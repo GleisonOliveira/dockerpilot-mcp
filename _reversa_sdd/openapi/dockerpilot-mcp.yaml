@@ -1,0 +1,358 @@
+openapi: 3.1.0
+info:
+  title: DockerPilot MCP
+  version: 1.0.0
+  description: Contratos das 16 tools do MCP server DockerPilot, derivados de _reversa_sdd/data-dictionary.md. Cada operação corresponde a uma tool; o body segue o schema Zod registrado no server.
+  license:
+    name: Proprietary
+paths:
+  /list_containers:
+    post:
+      operationId: listContainers
+      summary: Lista containers com filtros e enriquecimento opcional
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ListContainersInput' }
+      responses:
+        '200':
+          description: ContainerItem[] (ver data-dictionary §2.1)
+        '4xx':
+          $ref: '#/components/responses/Error'
+  /stop_containers:
+    post:
+      operationId: stopContainers
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StopInput' }
+      responses:
+        '200': { description: preview | success | results }
+        '4xx': { $ref: '#/components/responses/Error' }
+  /start_containers:
+    post:
+      operationId: startContainers
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StartInput' }
+      responses:
+        '200': { description: preview | success | results }
+        '4xx': { $ref: '#/components/responses/Error' }
+  /restart_container:
+    post:
+      operationId: restartContainer
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RestartInput' }
+      responses:
+        '200': { description: '{restarted:true, container:{id,name,status}}' }
+        '4xx': { $ref: '#/components/responses/Error' }
+  /delete_container:
+    post:
+      operationId: deleteContainer
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeleteContainerInput' }
+      responses:
+        '200': { description: preview | deleted }
+        '4xx': { $ref: '#/components/responses/Error' }
+  /create_container:
+    post:
+      operationId: createContainer
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateContainerInput' }
+      responses:
+        '200': { description: '{created, started, container}' }
+        '4xx': { $ref: '#/components/responses/Error' }
+  /exec_command:
+    post:
+      operationId: execCommand
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExecInput' }
+      responses:
+        '200': { description: '{containerId, command, exitCode, success, output?}' }
+        '4xx': { $ref: '#/components/responses/Error' }
+  /container_logs:
+    post:
+      operationId: containerLogs
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LogsInput' }
+      responses:
+        '200': { description: '{containerId, tail, logs: string[]}' }
+        '4xx': { $ref: '#/components/responses/Error' }
+  /list_images:
+    post:
+      operationId: listImages
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ListImagesInput' }
+      responses:
+        '200': { description: "ImageItem[] (ver data-dictionary §2.2)" }
+        '4xx': { $ref: '#/components/responses/Error' }
+  /delete_image:
+    post:
+      operationId: deleteImage
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeleteImageInput' }
+      responses:
+        '200': { description: preview | deleted }
+        '4xx': { $ref: '#/components/responses/Error' }
+  /pull_image:
+    post:
+      operationId: pullImage
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PullImageInput' }
+      responses:
+        '200': { description: '{pulled, id, tags, size}' }
+        '4xx': { $ref: '#/components/responses/Error' }
+  /prune_images:
+    post:
+      operationId: pruneImages
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PruneInput' }
+      responses:
+        '200': { description: preview | pruned }
+        '4xx': { $ref: '#/components/responses/Error' }
+  /list_volumes:
+    post:
+      operationId: listVolumes
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ListVolumesInput' }
+      responses:
+        '200': { description: "VolumeItem[] (ver data-dictionary §2.3)" }
+        '4xx': { $ref: '#/components/responses/Error' }
+  /create_volume:
+    post:
+      operationId: createVolume
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateVolumeInput' }
+      responses:
+        '200': { description: '{created, volume, mountPath}' }
+        '4xx': { $ref: '#/components/responses/Error' }
+  /delete_volume:
+    post:
+      operationId: deleteVolume
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeleteVolumeInput' }
+      responses:
+        '200': { description: preview | deleted }
+        '4xx': { $ref: '#/components/responses/Error' }
+  /docker_status:
+    post:
+      operationId: dockerStatus
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StatusInput' }
+      responses:
+        '200':
+          description: '{status, version:{engine,api,go,os,arch,kernel,build_time}, system:{hostname,os,os_type,kernel,architecture,cpus,memory_total_bytes,docker_root_dir,logging_driver,cgroup_driver,cgroup_version}, containers:{total,running,paused,stopped}, images:{total}, disk_usage:{images:{count,total_size_bytes,reclaimable_bytes},volumes:{count,total_size_bytes},build_cache:{count,total_size_bytes}}, plugins:{volume,network,log}, swarm:{active,state}, warnings}'
+        '4xx': { $ref: '#/components/responses/Error' }
+  /list_prompts:
+    post:
+      operationId: listPrompts
+      summary: Registro dos 7 prompts (container_troubleshoot, image_cleanup, volume_removal, compose_start, compose_stop, compose_restart, compose_service)
+      responses:
+        '200': { description: prompt list }
+components:
+  responses:
+    Error:
+      description: Erro normalizado
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              isError: { type: boolean, const: true }
+              content:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type: { type: string, const: text }
+                    text: { type: string, example: 'Error <ctx>: <msg>' }
+  schemas:
+    ListContainersInput:
+      type: object
+      properties:
+        all: { type: boolean, default: false }
+        id: { type: string }
+        name: { type: string }
+        status:
+          type: string
+          enum: [created, restarting, running, removing, paused, exited, dead]
+        includePorts: { type: boolean, default: false }
+        includeMounts: { type: boolean, default: false }
+        includeNetworks: { type: boolean, default: false }
+        includeUsage: { type: boolean, default: false }
+        includeLabels: { type: boolean, default: false }
+        includeHealthcheck: { type: boolean, default: false }
+        includeRestartInfo: { type: boolean, default: false }
+        includeComposeMetadata: { type: boolean, default: false }
+        includeDependencyInfo: { type: boolean, default: false }
+        includeResourceLimits: { type: boolean, default: false }
+        includeStateDetails: { type: boolean, default: false }
+    StopInput:
+      type: object
+      properties:
+        names: { type: array, items: { type: string } }
+        ids: { type: array, items: { type: string } }
+        exclude: { type: array, items: { type: string } }
+        timeout: { type: number, default: 10 }
+        force: { type: boolean, default: false }
+        stopDependents: { type: boolean, default: false }
+        summarized: { type: boolean, default: true }
+        dryRun: { type: boolean, default: false }
+    StartInput:
+      type: object
+      properties:
+        names: { type: array, items: { type: string } }
+        ids: { type: array, items: { type: string } }
+        exclude: { type: array, items: { type: string } }
+        startDependencies: { type: boolean, default: false }
+        summarized: { type: boolean, default: true }
+        dryRun: { type: boolean, default: false }
+    RestartInput:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string }
+    DeleteContainerInput:
+      type: object
+      required: [id, confirmed]
+      properties:
+        id: { type: string }
+        force: { type: boolean, default: false }
+        removeImage: { type: boolean, default: false }
+        confirmed: { type: boolean }
+    CreateContainerInput:
+      type: object
+      required: [image]
+      properties:
+        image: { type: string }
+        name: { type: string }
+        command: { type: array, items: { type: string } }
+        env: { type: object, additionalProperties: { type: string } }
+        ports:
+          type: array
+          items:
+            type: object
+            properties:
+              host: { type: string }
+              container: { type: string }
+        volumes: { type: array, items: { type: string } }
+        networks: { type: array, items: { type: string } }
+        restart_policy:
+          type: string
+          enum: [no, always, on-failure, unless-stopped]
+        healthcheck:
+          type: object
+          properties:
+            test: { type: array, items: { type: string } }
+            interval_seconds: { type: number }
+            timeout_seconds: { type: number }
+            retries: { type: number }
+            start_period_seconds: { type: number }
+        resources:
+          type: object
+          properties:
+            memory_mb: { type: number }
+            cpu_shares: { type: number }
+            cpu_quota: { type: number, minimum: 1000 }
+            cpu_period: { type: number, minimum: 1000 }
+        labels: { type: object, additionalProperties: { type: string } }
+    ExecInput:
+      type: object
+      required: [id, command]
+      properties:
+        id: { type: string, description: 'prefixo de ID; nomes NÃO aceitos' }
+        command: { type: string }
+        silent: { type: boolean, default: false }
+    LogsInput:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string, description: 'prefixo de ID; nomes NÃO aceitos' }
+        tail: { type: integer, minimum: 1, default: 5 }
+    ListImagesInput:
+      type: object
+      properties:
+        name: { type: string }
+        all: { type: boolean, default: false }
+        includeDigests: { type: boolean, default: false }
+        includeContainers: { type: boolean, default: false }
+        dangling: { type: boolean, default: false }
+    DeleteImageInput:
+      type: object
+      required: [id, confirmed]
+      properties:
+        id: { type: string, description: 'ID curto/completo ou name:tag' }
+        force: { type: boolean, default: false }
+        confirmed: { type: boolean }
+    PullImageInput:
+      type: object
+      required: [image]
+      properties:
+        image: { type: string, description: 'ex.: nginx:latest; sem espaço' }
+    PruneInput:
+      type: object
+      required: [confirmed]
+      properties:
+        force: { type: boolean, default: false }
+        confirmed: { type: boolean }
+    ListVolumesInput:
+      type: object
+      properties:
+        name: { type: string }
+        driver: { type: string }
+        dangling: { type: boolean, default: false }
+        includeContainers: { type: boolean, default: false }
+        includeUsage: { type: boolean, default: false }
+    CreateVolumeInput:
+      type: object
+      required: [containerId]
+      properties:
+        containerId: { type: string, description: 'prefixo de ID do container associado (req)' }
+        name: { type: string }
+        driver: { type: string, enum: [local, nfs, tmpfs, overlay2], default: local }
+        containerPath: { type: string }
+        readOnly: { type: boolean, default: false }
+        nocopy: { type: boolean, default: false }
+        mountpoint: { type: string }
+        nfsServer: { type: string }
+        nfsShare: { type: string }
+        nfsVersion: { type: string, enum: ['3', '4'] }
+        tmpfsSize: { type: string }
+        tmpfsMode: { type: string }
+        labels: { type: object, additionalProperties: { type: string } }
+    DeleteVolumeInput:
+      type: object
+      required: [name, confirmed]
+      properties:
+        name: { type: string }
+        confirmed: { type: boolean }
+    StatusInput:
+      type: object
+      properties: {}

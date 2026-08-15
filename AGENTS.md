@@ -106,6 +106,10 @@ Padrão obrigatório:
 | `container_troubleshoot` | Guia de diagnóstico para problemas com containers | Usuário reporta container com erro, não iniciando, porta ocupada, crash loop, etc. |
 | `image_cleanup` | Guia para liberar espaço em disco removendo imagens dangling | Usuário reporta pouco espaço em disco ou quer limpar imagens Docker não utilizadas. |
 | `volume_removal` | Workflow seguro de remoção de volume Docker com avaliação de risco e dupla confirmação para volumes de alto risco (bancos de dados, estado de aplicação, secrets). | Usuário quer remover um volume Docker com segurança. |
+| `compose_start` | Orienta o agente a subir todo o projeto Docker Compose em modo detached (`docker compose up -d`). Argumento opcional: `project_dir`. | Usuário quer rodar o projeto, subir todos os serviços ou executar `docker compose up`. |
+| `compose_stop` | Orienta o agente a derrubar todo o projeto Docker Compose (`docker compose down`). Argumento opcional: `project_dir`. | Usuário quer desligar a aplicação, parar todos os serviços ou executar `docker compose down`. |
+| `compose_restart` | Orienta o agente a reiniciar todos os serviços do projeto Docker Compose. Argumento opcional: `project_dir`. | Usuário quer reiniciar todos os serviços ou aplicar mudanças de configuração ciclando o projeto. |
+| `compose_service` | Orienta o agente a gerenciar um único serviço do Compose (start/stop/restart) via tools MCP (`list_containers`, `start_containers`, `stop_containers`, `restart_container`, `container_logs`). Argumentos opcionais: `service_name`, `action`. | Usuário quer gerenciar um serviço específico, não o projeto inteiro. |
 
 ## Requisitos
 
@@ -152,6 +156,11 @@ Ou configurar no Claude Desktop (`claude_desktop_config.json`):
 - Tools sem prefixo: `list_containers`, `stop_containers`, não `dockerpilot_*`
 - Campos opcionais reutilizáveis entre tools vão em `src/docker/shared/`
 
+## Limitações conhecidas
+
+- **`ToolContainer` sem proteção de erro (G-08):** as tools são instanciadas sem try/catch em `src/di/tool-container.ts` — uma falha na criação derruba o servidor no boot. Comportamento documentado; não foi alterado.
+- **Sem Dockerfile próprio (DT7):** o servidor MCP não possui Dockerfile próprio. Para rodar dentro de um container, é preciso construir uma imagem base com Node.js 20+ e copiar o `dist/` (o socket `/var/run/docker.sock` deve ser montado).
+
 ## Testes
 
 **Obrigatório:** toda feature adicionada ou modificada deve ter testes correspondentes. Sem exceção.
@@ -160,3 +169,33 @@ Ou configurar no Claude Desktop (`claude_desktop_config.json`):
 - Novo campo/parâmetro em tool existente → novos casos de teste no arquivo de teste da tool
 - Modificação de comportamento existente → atualizar testes afetados
 - Rodar `npm test` antes de considerar a tarefa concluída
+
+
+---
+
+# Reversa
+
+> Framework de Engenharia Reversa instalado neste projeto.
+
+## Como usar
+
+Use o fluxo adequado no chat:
+
+- `reversa` — descobrir e documentar um sistema existente
+- `reversa-new` — criar PRD e specs para um projeto novo
+- `reversa-forward` — implementar ou evoluir código a partir das specs
+- `reversa-migrate` — planejar a migração de um sistema legado
+- `reversa-docs` — gerar o mini-site visual da documentação
+- `reversa-agents-help` — consultar o catálogo completo de agentes
+
+## Comportamento ao ativar
+
+Quando o usuário digitar `reversa` sozinho em uma mensagem:
+
+1. Ative o skill `reversa` disponível em `.agents/skills/reversa/SKILL.md`
+2. Leia o SKILL.md na íntegra e siga exatamente as instruções do Reversa
+
+## Regra não-negociável
+
+Nunca apague, modifique ou sobrescreva arquivos pré-existentes do projeto legado.
+O Reversa escreve apenas em `.reversa/`, `_reversa_sdd/`, `_reversa_docs/` e `_reversa_forward/`.

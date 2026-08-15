@@ -13,4 +13,32 @@ describe("buildAssistantMessage (compose-service)", () => {
   it("returns non-empty string with service_name and action", () => {
     expect(buildAssistantMessage("api", "restart").trim()).not.toBe("");
   });
+
+  it("does NOT reference exec_command with a nonexistent args shape (DT3)", () => {
+    const message = buildAssistantMessage("api", "");
+    expect(message).not.toMatch(/tool:\s*exec_command[\s\S]*?args:\s*\{\s*command:\s*"cat"/);
+    expect(message).not.toContain("exec_command");
+  });
+
+  it("orients service identification by reading the Compose file first (E001)", () => {
+    const message = buildAssistantMessage("api", "");
+    expect(message).toContain("docker-compose.yml");
+    expect(message).toContain("compose.yaml");
+    expect(message).toContain("services:");
+    expect(message).toContain("container_name:");
+  });
+
+  it("orients via MCP tools only (list/start/stop/restart/logs)", () => {
+    const message = buildAssistantMessage("api", "");
+    for (const tool of [
+      "list_containers",
+      "start_containers",
+      "stop_containers",
+      "restart_container",
+      "container_logs",
+    ]) {
+      expect(message).toContain(`tool: ${tool}`);
+    }
+    expect(message).not.toContain("docker compose");
+  });
 });
