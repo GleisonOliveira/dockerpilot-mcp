@@ -20,11 +20,12 @@ describe("buildAssistantMessage (compose-service)", () => {
     expect(message).not.toContain("exec_command");
   });
 
-  it("orients service identification via list_containers with includeComposeMetadata (DT3)", () => {
+  it("orients service identification by reading the Compose file first (E001)", () => {
     const message = buildAssistantMessage("api", "");
-    expect(message).toContain("tool: list_containers");
-    expect(message).toContain("includeComposeMetadata: true");
-    expect(message).toContain("compose_metadata.service");
+    expect(message).toContain("docker-compose.yml");
+    expect(message).toContain("compose.yaml");
+    expect(message).toContain("services:");
+    expect(message).toContain("container_name:");
   });
 
   it("orients via MCP tools only (list/start/stop/restart/logs)", () => {

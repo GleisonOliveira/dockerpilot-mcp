@@ -56,15 +56,15 @@ describe("ComposeServicePrompt", () => {
     expect(assistantText).not.toMatch(/args:\s*\{\s*command:\s*"cat"/);
   });
 
-  it("regression DT3: generated assistant message orients via MCP tools only", () => {
+  it("regression DT3/E001: generated assistant message orients via MCP tools and reads the Compose file", () => {
     const server = makeMockServer();
     new ComposeServicePrompt().register(server);
     const callback = vi.mocked(server.registerPrompt).mock.calls[0][2] as (args: Record<string, unknown>) => unknown;
     const result = callback({}) as { messages: Array<{ content: { type: string; text: string }; role: string }> };
     const assistantText = result.messages.find((m) => m.role === "assistant")?.content.text;
 
+    expect(assistantText).toContain("docker-compose.yml");
     expect(assistantText).toContain("tool: list_containers");
-    expect(assistantText).toContain("includeComposeMetadata: true");
     expect(assistantText).toContain("tool: start_containers");
     expect(assistantText).toContain("tool: stop_containers");
     expect(assistantText).toContain("tool: restart_container");

@@ -74,3 +74,9 @@
 | Data | Alteração | Autor |
 |------|-----------|-------|
 | 2026-08-12 | Versão inicial gerada por `/reversa-to-do` | reversa |
+
+## Emendas
+
+| ID | Descrição | Dependências | Paralelismo | Arquivo alvo | Confidência | Status |
+|----|-----------|--------------|-------------|--------------|-------------|--------|
+| E001 | Reverter DT3 no prompt `compose_service`: identificar serviço lendo o `docker-compose.yml` primeiro, depois operar via tools MCP (sem referência a `exec_command`) | - | - | `src/docker/prompts/compose-service/messages/assistant.message.ts` | 🟢 | `[X]` |

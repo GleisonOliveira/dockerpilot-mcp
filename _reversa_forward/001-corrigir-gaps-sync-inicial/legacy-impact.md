@@ -25,6 +25,8 @@
 | testes de stop/start/create-container/delete-image/docker-status/exec-command | tools-* | regra-alterada | LOW | T013–T019: regressões DT2/DT4/DT5/DT-IMG-01/DT-ST + ordem do resolutor |
 | `tests/server.test.ts` | core | regra-nova | LOW | TT-03 (DT1): versão server/package.json ambas `0.1.0` |
 | testes de prompts compose-service | prompts | regra-nova | LOW | T024: regressão DT3 (sem `exec_command` inválido, via tools MCP) |
+| `src/docker/prompts/compose-service/messages/assistant.message.ts` | prompts | regra-alterada | MEDIUM | E001: revertida a identificação via `list_containers`/`includeComposeMetadata`; volta a orientar a leitura do `docker-compose.yml` para identificar o serviço e operá-lo via tools MCP |
+| testes de prompts compose-service | prompts | regra-alterada | LOW | E001: regressões atualizadas (leitura do compose + tools MCP, sem `exec_command` inválido) |
 
 ## Diff conceitual por componente
 

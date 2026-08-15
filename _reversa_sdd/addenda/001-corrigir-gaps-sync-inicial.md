@@ -47,3 +47,24 @@ Corrige os gaps G-01 a G-10 detectados na revisão da extração reversa, aplica
 - `_reversa_forward/001-corrigir-gaps-sync-inicial/requirements.md`
 - `_reversa_forward/001-corrigir-gaps-sync-inicial/actions.md`
 - `_reversa_forward/001-corrigir-gaps-sync-inicial/progress.jsonl`
+
+## Atualização 2026-08-14
+
+Emenda E001 aplicada pelo `/reversa-add`: reversão parcial do DT3 no prompt `compose_service`. O prompt volta a orientar a IA a ler o arquivo `docker-compose.yml` (com fallbacks `compose.yaml`/`docker-compose.yaml`/`compose.yml`) para identificar os serviços e seus overrides de `container_name:` e, a partir dessas informações, operar o serviço via as tools MCP do projeto. A identificação via `list_containers` + `includeComposeMetadata` foi removida do template do assistente. A restrição do DT3 que motivou o ajuste original permanece: o prompt **não** referencia mais `exec_command` com `args` inexistente — a leitura do arquivo é instrução direta ao agente, não invocação de tool.
+
+### Impacto adicional por artefato da extração
+
+| Artefato | Seção | Tipo de impacto | Delta |
+|----------|-------|-----------------|-------|
+| `_reversa_sdd/architecture.md` | `#6 Módulos (11) — prompts` | regra-alterada | prompt `compose_service` identifica o serviço lendo o `docker-compose.yml` primeiro e então opera via tools MCP; identificação por `includeComposeMetadata` removida (E001) |
+| `_reversa_sdd/domain.md` | `#2.6 Observações — R24` | regra-alterada | `compose_service` orienta leitura do arquivo compose + tools MCP; mantida a inexistência de referência inválida a `exec_command` |
+
+### Regras sob vigilância
+
+- `W006` (compose_service sem `exec_command` inválido) permanece vigente — `_reversa_forward/001-corrigir-gaps-sync-inicial/regression-watch.md`
+
+### Fontes desta atualização
+
+- `_reversa_forward/001-corrigir-gaps-sync-inicial/requirements.md` (seção `## Emendas`, E001)
+- `_reversa_forward/001-corrigir-gaps-sync-inicial/legacy-impact.md`
+- `_reversa_forward/001-corrigir-gaps-sync-inicial/progress.jsonl` (linha E001)

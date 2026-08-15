@@ -183,8 +183,17 @@ Cenário: suíte de testes verde (TEST-MANDATORY)
 
 - Nenhuma. Todas as decisões de revisão foram respondidas pelo usuário em 2026-08-13 e integradas em `_reversa_sdd/questions.md` e `_reversa_sdd/gaps.md` (confiança 🟢). Esta feature apenas aplica essas decisões no código e na documentação.
 
+## Emendas
+
+### E001, 2026-08-14
+
+O que muda: o prompt `compose_service` volta a orientar a IA a ler o arquivo `docker-compose.yml` (com fallbacks) para identificar o serviço e seus overrides, e a partir dessas informações operar o serviço via as tools MCP do projeto.
+Motivo: o ajuste DT3 substituiu a leitura do arquivo compose pela identificação via `list_containers` + `includeComposeMetadata`; o usuário pediu reversão porque a intenção original do prompt é a IA ler o arquivo docker-compose e, com base nele, usar as ferramentas disponíveis do projeto (sem reintroduzir a referência inválida a `exec_command` que originou o DT3).
+Arquivos previstos: `src/docker/prompts/compose-service/messages/assistant.message.ts`, `tests/docker/prompts/compose-service/messages/assistant.message.test.ts`, `tests/docker/prompts/compose-service/compose-service.prompt.test.ts`
+
 ## 11. Histórico de alterações
 
 | Data | Alteração | Autor |
 |------|-----------|-------|
 | 2026-08-12 | Versão inicial gerada por `/reversa-requirements` | reversa |
+| 2026-08-14 | Emenda E001 registrada (reversão DT3 no prompt `compose_service`) | reversa |
