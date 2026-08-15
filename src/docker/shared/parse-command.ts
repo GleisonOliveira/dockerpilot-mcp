@@ -1,61 +1,95 @@
+/**
+ * Tokenizes a shell-like command string into an array of arguments.
+ *
+ * It walks the input character by character, accumulating the token
+ * being built and pushing it to `args` whenever whitespace (space/tab)
+ * is met outside a quoted region. Quoting and escaping work like a
+ * shell, so arguments that contain spaces stay as a single token.
+ *
+ * Rules:
+ * - Space/tab separates tokens outside quotes; consecutive whitespace,
+ *   leading whitespace and trailing whitespace produce no empty tokens.
+ * - Single quotes: everything inside is literal (backslashes and double
+ *   quotes are NOT interpreted); the region ends at the closing quote.
+ * - Double quotes: `\"` and `\\` are unescaped; any other backslash is
+ *   kept verbatim. The region ends at an unescaped closing quote.
+ * - Backslash outside quotes escapes the next character (any char),
+ *   including whitespace, so `a\ b` is one token `a b`.
+ * - Unclosed quotes run until the end of the input (no error).
+ */
 export function parseCommand(input: string): string[] {
+  // Only empty input or separator-only input can yield no tokens.
+  if (!/[^\t ]/.test(input)) return [];
+
   const args: string[] = [];
-  let current = "";
-  let tokenizing = false;
-  let quote: "'" | '"' | null = null;
+  let currentToken = "";
+  let tokenStarted = false;
+  let openQuote: "'" | '"' | null = null;
+  let index = 0;
 
-  for (let i = 0; i < input.length; i++) {
-    const ch = input[i];
+  while (index < input.length) {
+    const char = input[index];
+    const nextChar = input[index + 1];
 
-    if (quote === "'") {
-      if (ch === "'") {
-        quote = null;
+    // Inside single quotes: literal mode until the closing quote.
+    if (openQuote === "'") {
+      if (char === "'") openQuote = null;
+      else currentToken += char;
+      index++;
+      continue;
+    }
+
+    // Inside double quotes: only \" and \\ are special.
+    if (openQuote === '"') {
+      if (char === '"') {
+        openQuote = null;
+        index++;
+      } else if (char === "\\" && (nextChar === '"' || nextChar === "\\")) {
+        currentToken += nextChar;
+        index += 2;
       } else {
-        current += ch;
+        currentToken += char;
+        index++;
       }
       continue;
     }
 
-    if (quote === '"') {
-      if (ch === '"') {
-        quote = null;
-      } else if (ch === "\\" && (input[i + 1] === '"' || input[i + 1] === "\\")) {
-        current += input[i + 1];
-        i++;
-      } else {
-        current += ch;
+    // Opening quote: enter the quoted region (token content may follow).
+    if (char === "'" || char === '"') {
+      openQuote = char;
+      tokenStarted = true;
+      index++;
+      continue;
+    }
+
+    // Backslash outside quotes: escape the next character literally.
+    if (char === "\\") {
+      // Trailing backslash with nothing to escape: skip it.
+      if (nextChar === undefined) {
+        index++;
+        continue;
       }
+      currentToken += nextChar;
+      index += 2;
       continue;
     }
 
-    if (ch === "'" || ch === '"') {
-      quote = ch;
-      tokenizing = true;
+    // Whitespace outside quotes: close the current token if it has content.
+    if (char === " " || char === "\t") {
+      if (tokenStarted) args.push(currentToken);
+      currentToken = "";
+      tokenStarted = false;
+      index++;
       continue;
     }
 
-    if (ch === "\\") {
-      const next = input[i + 1];
-      if (next !== undefined) {
-        current += next;
-        i++;
-      }
-      continue;
-    }
-
-    if (ch === " " || ch === "\t") {
-      if (tokenizing) {
-        args.push(current);
-        current = "";
-        tokenizing = false;
-      }
-      continue;
-    }
-
-    current += ch;
-    tokenizing = true;
+    // Regular character: append to the current token.
+    currentToken += char;
+    tokenStarted = true;
+    index++;
   }
 
-  if (tokenizing) args.push(current);
+  // Flush the last token when the input does not end in whitespace.
+  if (tokenStarted) args.push(currentToken);
   return args;
 }

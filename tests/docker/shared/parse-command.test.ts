@@ -77,4 +77,16 @@ describe("parseCommand", () => {
   it("backslash before backslash inside double quotes collapses to single backslash", () => {
     expect(parseCommand('echo "a\\\\b"')).toEqual(["echo", "a\\b"]);
   });
+
+  it("drops a lone trailing backslash (nothing left to escape)", () => {
+    expect(parseCommand("echo a\\")).toEqual(["echo", "a"]);
+  });
+
+  it("escapes any character outside quotes, not just whitespace", () => {
+    expect(parseCommand("echo a\\tb")).toEqual(["echo", "atb"]);
+  });
+
+  it("keeps backslash verbatim inside double quotes before other chars", () => {
+    expect(parseCommand('echo "a\\nb"')).toEqual(["echo", "a\\nb"]);
+  });
 });
