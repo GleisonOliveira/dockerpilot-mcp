@@ -16,8 +16,23 @@
  * - Backslash outside quotes escapes the next character (any char),
  *   including whitespace, so `a\ b` is one token `a b`.
  * - Unclosed quotes run until the end of the input (no error).
+ *
+ * Security contract:
+ * - The returned array is meant to be executed WITHOUT a shell (e.g. as
+ *   `exec.Cmd` argv in the Docker Engine API). Never re-join it into a
+ *   single string and run it through a shell: quotes/escapes are already
+ *   resolved here, so shell metacharacters smuggled inside a token (e.g.
+ *   `\;`, `$()`) would become active if a shell were involved.
+ * - Input containing a NUL byte (`\0`) is rejected: NUL cannot appear in
+ *   an `execve()` argv entry, so it would otherwise truncate the argument
+ *   or fail at runtime, making the executed command diverge from the one
+ *   that was parsed and displayed.
  */
 export function parseCommand(input: string): string[] {
+  if (input.includes("\0")) {
+    throw new Error("parseCommand: input contains a NUL byte (\\0)");
+  }
+
   // Only empty input or separator-only input can yield no tokens.
   if (!/[^\t ]/.test(input)) return [];
 

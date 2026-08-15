@@ -89,4 +89,12 @@ describe("parseCommand", () => {
   it("keeps backslash verbatim inside double quotes before other chars", () => {
     expect(parseCommand('echo "a\\nb"')).toEqual(["echo", "a\\nb"]);
   });
+
+  it("rejects input containing a NUL byte (security)", () => {
+    expect(() => parseCommand("echo a\u0000b")).toThrow(/NUL/);
+  });
+
+  it("rejects a lone NUL byte (security)", () => {
+    expect(() => parseCommand("\u0000")).toThrow(/NUL/);
+  });
 });
