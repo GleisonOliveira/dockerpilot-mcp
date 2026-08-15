@@ -1,9 +1,9 @@
 {
   "schema-version": 1,
-  "feature-dir": "_reversa_forward/001-corrigir-gaps-sync-inicial",
-  "feature-id": "001",
-  "short-name": "corrigir-gaps-sync-inicial",
-  "started-at": "2026-08-13T01:58:42Z",
+  "feature-dir": "_reversa_forward/002-novas-tools-docker",
+  "feature-id": "002",
+  "short-name": "novas-tools-docker",
+  "started-at": "2026-08-14T00:00:00Z",
   "current-stage": "requirements",
   "stages-completed": [],
   "paused-features": []
