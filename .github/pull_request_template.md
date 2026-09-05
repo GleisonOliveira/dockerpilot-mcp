@@ -21,6 +21,6 @@
 ## Checklist
 
 - [ ] Lint passed (`npm run lint`)
-- [ ] Type check passed (`npm run type-check`)
+- [ ] Type check passed (`npm run typecheck`)
 - [ ] Build succeeded (`npm run build`)
 - [ ] Manually tested in browser
